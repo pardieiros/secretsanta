@@ -1,13 +1,18 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { giftIdeaAPI } from '../lib/api'
 import Button from '../components/Button'
 import Card from '../components/Card'
 import Input from '../components/Input'
 import Textarea from '../components/Textarea'
 import { useState } from 'react'
+import { useErrorModal } from '../hooks/useErrorModal'
+import ErrorModal from '../components/ErrorModal'
+import { handleApiError } from '../utils/errorHandler'
 
 export default function GiftIdeas() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -15,6 +20,8 @@ export default function GiftIdeas() {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [formData, setFormData] = useState({ title: '', description: '' })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const { isOpen, errorData, showError, hideError } = useErrorModal()
 
   const { data: ideasData, isLoading } = useQuery({
     queryKey: ['gift-ideas', groupId],
@@ -29,8 +36,26 @@ export default function GiftIdeas() {
       giftIdeaAPI.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gift-ideas', groupId] })
+      queryClient.invalidateQueries({ queryKey: ['group', groupId, 'members_without_gift_ideas'] })
       setShowForm(false)
       setFormData({ title: '', description: '' })
+      setErrors({})
+    },
+    onError: (error: any) => {
+      handleApiError(error, showError)
+      const errorData = error.response?.data
+      if (errorData && typeof errorData === 'object') {
+        // Handle field-specific errors
+        const fieldErrors: Record<string, string> = {}
+        Object.keys(errorData).forEach((key) => {
+          if (Array.isArray(errorData[key])) {
+            fieldErrors[key] = errorData[key][0]
+          } else if (typeof errorData[key] === 'string') {
+            fieldErrors[key] = errorData[key]
+          }
+        })
+        setErrors(fieldErrors)
+      }
     },
   })
 
@@ -39,8 +64,26 @@ export default function GiftIdeas() {
       giftIdeaAPI.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gift-ideas', groupId] })
+      queryClient.invalidateQueries({ queryKey: ['group', groupId, 'members_without_gift_ideas'] })
       setEditingId(null)
       setFormData({ title: '', description: '' })
+      setErrors({})
+    },
+    onError: (error: any) => {
+      handleApiError(error, showError)
+      const errorData = error.response?.data
+      if (errorData && typeof errorData === 'object') {
+        // Handle field-specific errors
+        const fieldErrors: Record<string, string> = {}
+        Object.keys(errorData).forEach((key) => {
+          if (Array.isArray(errorData[key])) {
+            fieldErrors[key] = errorData[key][0]
+          } else if (typeof errorData[key] === 'string') {
+            fieldErrors[key] = errorData[key]
+          }
+        })
+        setErrors(fieldErrors)
+      }
     },
   })
 
@@ -59,6 +102,7 @@ export default function GiftIdeas() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setErrors({})
     if (editingId) {
       updateMutation.mutate({ id: editingId, data: formData })
     } else {
@@ -70,6 +114,7 @@ export default function GiftIdeas() {
     setShowForm(false)
     setEditingId(null)
     setFormData({ title: '', description: '' })
+    setErrors({})
   }
 
   if (isLoading) {
@@ -83,18 +128,18 @@ export default function GiftIdeas() {
   const canAddMore = ideas.length < 5
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-text-main">Gift Ideas</h1>
-        <Button variant="secondary" onClick={() => navigate(`/groups/${groupId}`)}>
-          Back to Group
+    <div className="max-w-3xl mx-auto px-4 sm:px-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-text-main">{t('giftIdeas.title')}</h1>
+        <Button variant="secondary" onClick={() => navigate(`/groups/${groupId}`)} className="w-full sm:w-auto">
+          {t('giftIdeas.backToGroup')}
         </Button>
       </div>
 
       {!showForm && canAddMore && (
         <Card className="mb-6">
           <Button onClick={() => setShowForm(true)} className="w-full">
-            Add New Gift Idea
+            {t('giftIdeas.addNew')}
           </Button>
         </Card>
       )}
@@ -102,32 +147,38 @@ export default function GiftIdeas() {
       {showForm && (
         <Card className="mb-6">
           <h2 className="text-xl font-bold text-text-main mb-4">
-            {editingId ? 'Edit Gift Idea' : 'New Gift Idea'}
+            {editingId ? t('giftIdeas.editTitle') : t('giftIdeas.newTitle')}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Title"
+              label={t('giftIdeas.titleLabel')}
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, title: e.target.value })
+                if (errors.title) {
+                  setErrors({ ...errors, title: '' })
+                }
+              }}
               required
-              placeholder="e.g., Wireless Headphones"
+              placeholder={t('giftIdeas.titlePlaceholder')}
+              error={errors.title}
             />
             <Textarea
-              label="Description (Optional)"
+              label={t('giftIdeas.descriptionLabel')}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              placeholder="Any additional details or preferences..."
+              placeholder={t('giftIdeas.descriptionPlaceholder')}
             />
             <div className="flex space-x-4">
               <Button
                 type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
-                {editingId ? 'Update' : 'Add'} Idea
+                {editingId ? t('giftIdeas.update') : t('giftIdeas.add')} {t('giftIdeas.idea')}
               </Button>
               <Button type="button" variant="secondary" onClick={handleCancel}>
-                Cancel
+                {t('giftIdeas.cancel')}
               </Button>
             </div>
           </form>
@@ -137,16 +188,16 @@ export default function GiftIdeas() {
       {!canAddMore && !showForm && (
         <Card className="mb-6 bg-warning/10 border-warning">
           <p className="text-warning font-medium">
-            You've reached the maximum of 5 gift ideas per group.
+            {t('giftIdeas.maxReached')}
           </p>
         </Card>
       )}
 
       {ideas.length === 0 ? (
         <Card className="text-center py-12">
-          <p className="text-text-secondary mb-4">No gift ideas yet.</p>
+          <p className="text-text-secondary mb-4">{t('giftIdeas.noIdeas')}</p>
           {canAddMore && (
-            <Button onClick={() => setShowForm(true)}>Add Your First Idea</Button>
+            <Button onClick={() => setShowForm(true)}>{t('giftIdeas.addFirst')}</Button>
           )}
         </Card>
       ) : (
@@ -166,18 +217,18 @@ export default function GiftIdeas() {
                     onClick={() => handleEdit(idea)}
                     className="text-sm px-4 py-2"
                   >
-                    Edit
+                    {t('giftIdeas.edit')}
                   </Button>
                   <Button
                     variant="secondary"
                     onClick={() => {
-                      if (confirm('Are you sure you want to delete this idea?')) {
+                      if (confirm(t('giftIdeas.deleteConfirm'))) {
                         deleteMutation.mutate(idea.id)
                       }
                     }}
                     className="text-sm px-4 py-2 text-error border-error hover:bg-error/10"
                   >
-                    Delete
+                    {t('giftIdeas.delete')}
                   </Button>
                 </div>
               </div>
@@ -185,6 +236,14 @@ export default function GiftIdeas() {
           ))}
         </div>
       )}
+
+      <ErrorModal
+        isOpen={isOpen}
+        title={errorData.title}
+        message={errorData.message}
+        errors={errorData.errors}
+        onClose={hideError}
+      />
     </div>
   )
 }

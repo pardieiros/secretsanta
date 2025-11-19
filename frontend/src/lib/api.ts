@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios'
+import i18n from '../i18n/config'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
@@ -9,13 +10,20 @@ const api = axios.create({
   },
 })
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and language
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token')
+    // Check localStorage first, then sessionStorage
+    let token = localStorage.getItem('access_token')
+    if (!token) {
+      token = sessionStorage.getItem('access_token')
+    }
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    // Add Accept-Language header based on current i18n language
+    const language = i18n.language || 'en'
+    config.headers['Accept-Language'] = language
     return config
   },
   (error) => {
@@ -30,6 +38,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
+      sessionStorage.removeItem('access_token')
+      sessionStorage.removeItem('refresh_token')
       window.location.href = '/login'
     }
     return Promise.reject(error)
@@ -52,12 +62,27 @@ export const authAPI = {
     const response = await api.post('/token/refresh/', { refresh })
     return response.data
   },
+  
+  googleAuth: async (code: string) => {
+    const response = await api.post('/auth/google/', { code })
+    return response.data
+  },
 }
 
 // User API
 export const userAPI = {
   getMe: async () => {
     const response = await api.get('/users/me/')
+    return response.data
+  },
+  
+  getUser: async (userId: number) => {
+    const response = await api.get(`/users/${userId}/`)
+    return response.data
+  },
+  
+  updateProfile: async (data: any) => {
+    const response = await api.patch('/users/update_profile/', data)
     return response.data
   },
 }
@@ -109,6 +134,11 @@ export const groupAPI = {
     return response.data
   },
   
+  getMembersWithoutGiftIdeas: async (id: number) => {
+    const response = await api.get(`/groups/${id}/members_without_gift_ideas/`)
+    return response.data
+  },
+  
   getMyAssignment: async (id: number) => {
     const response = await api.get(`/groups/${id}/my_assignment/`)
     return response.data
@@ -116,6 +146,47 @@ export const groupAPI = {
   
   getWhoDrewMe: async (id: number) => {
     const response = await api.get(`/groups/${id}/who_drew_me/`)
+    return response.data
+  },
+  
+  reveal: async (id: number, revealDatetime?: string) => {
+    const data = revealDatetime ? { reveal_datetime: revealDatetime } : {}
+    const response = await api.post(`/groups/${id}/reveal/`, data)
+    return response.data
+  },
+  
+  getSecretSantaGiftIdeas: async (id: number) => {
+    const response = await api.get(`/groups/${id}/secret_santa_gift_ideas/`)
+    return response.data
+  },
+  
+  getPendingInvites: async () => {
+    const response = await api.get('/groups/pending_invites/')
+    return response.data
+  },
+  
+  searchGroups: async (query: string) => {
+    const response = await api.get('/groups/search/', { params: { q: query } })
+    return response.data
+  },
+  
+  getSentInvites: async () => {
+    const response = await api.get('/groups/sent_invites/')
+    return response.data
+  },
+  
+  getInviteDetails: async (id: number) => {
+    const response = await api.get(`/groups/${id}/invite_details/`)
+    return response.data
+  },
+  
+  getPermissions: async (id: number) => {
+    const response = await api.get(`/groups/${id}/permissions/`)
+    return response.data
+  },
+  
+  updatePermission: async (id: number, userId: number, permissions: { can_edit_settings?: boolean; can_invite_members?: boolean; can_send_messages?: boolean }) => {
+    const response = await api.post(`/groups/${id}/update_permission/`, { user_id: userId, ...permissions })
     return response.data
   },
 }
@@ -150,6 +221,101 @@ export const giftIdeaAPI = {
   
   getReceiverIdeas: async (groupId: number) => {
     const response = await api.get(`/gift-ideas/${groupId}/receiver_ideas/`)
+    return response.data
+  },
+}
+
+// Friendship API
+export const friendshipAPI = {
+  list: async () => {
+    const response = await api.get('/friendships/')
+    return response.data
+  },
+  
+  search: async (query: string) => {
+    const response = await api.get('/friendships/search/', { params: { q: query } })
+    return response.data
+  },
+  
+  sendRequest: async (addresseeId: number) => {
+    const response = await api.post('/friendships/', { addressee: addresseeId })
+    return response.data
+  },
+  
+  accept: async (friendshipId: number) => {
+    const response = await api.post(`/friendships/${friendshipId}/accept/`)
+    return response.data
+  },
+  
+  reject: async (friendshipId: number) => {
+    const response = await api.post(`/friendships/${friendshipId}/reject/`)
+    return response.data
+  },
+  
+  getFriends: async () => {
+    const response = await api.get('/friendships/friends/')
+    return response.data
+  },
+  
+  inviteByEmail: async (email: string) => {
+    const response = await api.post('/friendships/invite_by_email/', { email })
+    return response.data
+  },
+}
+
+// Message API
+export const messageAPI = {
+  list: async (userId?: number) => {
+    const params = userId ? { user: userId } : {}
+    const response = await api.get('/messages/', { params })
+    return response.data
+  },
+  
+  send: async (receiverId: number, content: string) => {
+    const response = await api.post('/messages/', { receiver: receiverId, content })
+    return response.data
+  },
+  
+  getConversations: async () => {
+    const response = await api.get('/messages/conversations/')
+    return response.data
+  },
+  
+  markRead: async (messageId: number) => {
+    const response = await api.post(`/messages/${messageId}/mark_read/`)
+    return response.data
+  },
+  
+  markAllRead: async (userId: number) => {
+    const response = await api.post('/messages/mark_all_read/', { user_id: userId })
+    return response.data
+  },
+}
+
+// Notification API
+export const notificationAPI = {
+  list: async () => {
+    const response = await api.get('/notifications/')
+    return response.data
+  },
+  
+  getUnreadCount: async () => {
+    const response = await api.get('/notifications/unread_count/')
+    return response.data
+  },
+  
+  markRead: async (notificationId: number) => {
+    const response = await api.post(`/notifications/${notificationId}/mark_read/`)
+    return response.data
+  },
+  
+  markAllRead: async () => {
+    const response = await api.post('/notifications/mark_all_read/')
+    return response.data
+  },
+  
+  rejectGroupInvite: async (notificationId: number) => {
+    const response = await api.delete(`/notifications/${notificationId}/reject_group_invite/`)
     return response.data
   },
 }

@@ -52,12 +52,12 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
-      <Card className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <img src={logo} alt="Secret Santa" className="h-24 w-24 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-text-main mb-2">Create Account</h1>
-          <p className="text-text-secondary">Join Secret Santa today</p>
+    <div className="min-h-screen bg-background flex items-center justify-center py-8 sm:py-12 px-4">
+      <Card className="max-w-md w-full px-4 sm:px-6">
+        <div className="text-center mb-6 sm:mb-8">
+          <img src={logo} alt="Secret Santa" className="h-20 sm:h-24 w-20 sm:w-24 mx-auto mb-4" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-text-main mb-2">Create Account</h1>
+          <p className="text-sm sm:text-base text-text-secondary">Join Secret Santa today</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

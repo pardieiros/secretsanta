@@ -1,0 +1,35 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h2 style="margin: 0 0 20px 0; color: #135F5C; font-size: 24px; font-weight: 600;">New Friend Request! 👋</h2>
+
+<p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    Hello!
+</p>
+
+<p style="margin: 0 0 30px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    <strong style="color: #135F5C;">{{ requester_name }}</strong> wants to be your friend on Secret Santa!
+</p>
+
+<p style="margin: 0 0 30px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    Join Secret Santa to connect with {{ requester_name }} and organize your Secret Santa groups.
+</p>
+
+<!-- CTA Button -->
+<table role="presentation" style="width: 100%; margin: 30px 0;">
+    <tr>
+        <td align="center">
+            <a href="{{ register_link }}" style="display: inline-block; padding: 14px 32px; background-color: #135F5C; color: #FFFFFF; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background-color 0.3s;">Join Secret Santa</a>
+        </td>
+    </tr>
+</table>
+
+<p style="margin: 20px 0 0 0; color: #666666; font-size: 14px; line-height: 1.6;">
+    Once you register, you'll automatically receive a friend request from {{ requester_name }}.
+</p>
+
+<p style="margin: 30px 0 0 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    Happy gifting! 🎁
+</p>
+{% endblock %}
+

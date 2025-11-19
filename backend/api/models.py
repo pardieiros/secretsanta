@@ -11,16 +11,35 @@ from django.utils import timezone
 class User(AbstractUser):
     """Custom User model with email as unique identifier."""
     email = models.EmailField(unique=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    profile_picture = models.URLField(blank=True, null=True)
+    profile_complete = models.BooleanField(default=False)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
     
     def __str__(self):
         return self.email
+    
+    def check_profile_complete(self):
+        """Check if user profile is complete."""
+        # Profile is complete only if:
+        # 1. User has explicitly set profile_complete=True
+        # 2. AND has first_name and last_name
+        return bool(
+            self.profile_complete and
+            self.first_name and 
+            self.last_name
+        )
 
 
 class Group(models.Model):
     """Secret Santa group model."""
+    VISIBILITY_CHOICES = [
+        ('private', 'Private'),
+        ('public', 'Public'),
+    ]
+    
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_groups')
@@ -31,6 +50,12 @@ class Group(models.Model):
     auto_draw_enabled = models.BooleanField(default=False)
     is_drawn = models.BooleanField(default=False)
     draw_completed_at = models.DateTimeField(null=True, blank=True)
+    is_revealed = models.BooleanField(default=False)
+    reveal_datetime = models.DateTimeField(null=True, blank=True)
+    visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='private')
+    location_name = models.CharField(max_length=200, blank=True, null=True)
+    location_latitude = models.DecimalField(max_digits=18, decimal_places=15, blank=True, null=True)
+    location_longitude = models.DecimalField(max_digits=18, decimal_places=15, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -46,9 +71,38 @@ class Group(models.Model):
             self.invite_code = secrets.token_urlsafe(16)
         super().save(*args, **kwargs)
     
+    def clean(self):
+        """Validate that public groups have location."""
+        from django.core.exceptions import ValidationError
+        if self.visibility == 'public' and not (self.location_name and self.location_latitude and self.location_longitude):
+            raise ValidationError('Public groups must have a location (name, latitude, and longitude).')
+    
     def get_member_count(self):
         """Get the number of members in this group."""
-        return self.members.count()
+        return self.memberships.count()
+    
+    def all_members_have_gift_ideas(self):
+        """Check if all members have at least one gift idea for this group."""
+        # Import here to avoid circular import
+        from django.apps import apps
+        GiftIdea = apps.get_model('api', 'GiftIdea')
+        members = self.get_members()
+        for member in members:
+            if not GiftIdea.objects.filter(group=self, author=member).exists():
+                return False
+        return True
+    
+    def get_members_without_gift_ideas(self):
+        """Get list of members who don't have gift ideas for this group."""
+        # Import here to avoid circular import
+        from django.apps import apps
+        GiftIdea = apps.get_model('api', 'GiftIdea')
+        members = self.get_members()
+        members_without_ideas = []
+        for member in members:
+            if not GiftIdea.objects.filter(group=self, author=member).exists():
+                members_without_ideas.append(member)
+        return members_without_ideas
     
     def can_draw(self):
         """Check if draw conditions are met."""
@@ -56,12 +110,13 @@ class Group(models.Model):
         return (
             now >= self.draw_datetime and
             self.get_member_count() >= self.min_participants and
-            not self.is_drawn
+            not self.is_drawn and
+            self.all_members_have_gift_ideas()
         )
     
     def get_members(self):
         """Get all members of this group."""
-        return User.objects.filter(groupmembership__group=self)
+        return User.objects.filter(group_memberships__group=self).distinct()
 
 
 class GroupMembership(models.Model):
@@ -76,6 +131,24 @@ class GroupMembership(models.Model):
     
     def __str__(self):
         return f"{self.user.email} in {self.group.name}"
+
+
+class GroupPermission(models.Model):
+    """Model to track member permissions within a group."""
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='permissions')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='group_permissions')
+    can_edit_settings = models.BooleanField(default=False)
+    can_invite_members = models.BooleanField(default=False)
+    can_send_messages = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = [['group', 'user']]
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.email} permissions in {self.group.name}"
 
 
 class SecretSantaAssignment(models.Model):
@@ -109,4 +182,90 @@ class GiftIdea(models.Model):
     
     def __str__(self):
         return f"{self.title} by {self.author.email} in {self.group.name}"
+
+
+class Friendship(models.Model):
+    """Model for user friendships."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('blocked', 'Blocked'),
+    ]
+    
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_friend_requests')
+    addressee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_friend_requests')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = [['requester', 'addressee']]
+        ordering = ['-updated_at']
+    
+    def __str__(self):
+        return f"{self.requester.email} -> {self.addressee.email} ({self.status})"
+
+
+class FriendInvite(models.Model):
+    """Model for friend invitations sent by email to non-registered users."""
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_friend_invites')
+    email = models.EmailField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_accepted = models.BooleanField(default=False)
+    
+    class Meta:
+        unique_together = [['requester', 'email']]
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.requester.email} -> {self.email}"
+
+
+class Message(models.Model):
+    """Model for direct messages between users."""
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['sender', 'receiver', '-created_at']),
+            models.Index(fields=['receiver', 'is_read', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.sender.email} -> {self.receiver.email}: {self.content[:50]}"
+
+
+class Notification(models.Model):
+    """Model for user notifications."""
+    NOTIFICATION_TYPES = [
+        ('friend_request', 'Friend Request'),
+        ('friend_accepted', 'Friend Accepted'),
+        ('message', 'Message'),
+        ('group_invite', 'Group Invite'),
+        ('group_draw', 'Group Draw'),
+        ('system', 'System'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    related_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='related_notifications')
+    related_group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email}: {self.title}"
 

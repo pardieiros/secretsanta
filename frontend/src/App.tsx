@@ -10,6 +10,14 @@ import CreateGroup from './pages/CreateGroup'
 import EditGroup from './pages/EditGroup'
 import GiftIdeas from './pages/GiftIdeas'
 import JoinGroup from './pages/JoinGroup'
+import JoinGroupPage from './pages/JoinGroupPage'
+import GoogleCallback from './pages/GoogleCallback'
+import Social from './pages/Social'
+import Messages from './pages/Messages'
+import Notifications from './pages/Notifications'
+import Settings from './pages/Settings'
+import Groups from './pages/Groups'
+import GroupInvites from './pages/GroupInvites'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,11 +64,19 @@ function App() {
           <Routes>
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+            <Route path="/auth/google/callback" element={<GoogleCallback />} />
             <Route path="/join/:inviteCode" element={<JoinGroup />} />
             
             <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
               <Route index element={<Navigate to="/dashboard" />} />
               <Route path="dashboard" element={<Dashboard />} />
+              <Route path="groups" element={<Groups />} />
+              <Route path="groups/invites" element={<GroupInvites />} />
+              <Route path="social" element={<Social />} />
+              <Route path="messages" element={<Messages />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="join" element={<JoinGroupPage />} />
               <Route path="groups/new" element={<CreateGroup />} />
               <Route path="groups/:id" element={<GroupDetail />} />
               <Route path="groups/:id/edit" element={<EditGroup />} />

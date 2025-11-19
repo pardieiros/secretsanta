@@ -1,0 +1,36 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h2 style="margin: 0 0 20px 0; color: #135F5C; font-size: 24px; font-weight: 600;">Reminder: More Participants Needed! ⚠️</h2>
+
+<p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    Hello {{ owner_name }},
+</p>
+
+<p style="margin: 0 0 30px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    Your Secret Santa group <strong style="color: #135F5C;">"{{ group_name }}"</strong> needs more participants!
+</p>
+
+<!-- Stats Card -->
+<div style="background-color: #F5D7B2; border-radius: 8px; padding: 20px; margin: 30px 0; border-left: 4px solid #D65448;">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 8px 0; color: #666666; font-size: 14px;">Current participants:</td>
+            <td style="padding: 8px 0; color: #D65448; font-size: 18px; font-weight: 600;">{{ member_count }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; color: #666666; font-size: 14px;">Required:</td>
+            <td style="padding: 8px 0; color: #333333; font-size: 18px; font-weight: 600;">{{ min_participants }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; color: #666666; font-size: 14px;">Draw date:</td>
+            <td style="padding: 8px 0; color: #333333; font-size: 14px;">{{ draw_date }}</td>
+        </tr>
+    </table>
+</div>
+
+<p style="margin: 30px 0 0 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    Please invite more people to join your group so the draw can happen on time!
+</p>
+{% endblock %}
+

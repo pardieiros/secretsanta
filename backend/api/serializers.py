@@ -5,17 +5,24 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
-from .models import User, Group, GroupMembership, SecretSantaAssignment, GiftIdea
+from django.utils.translation import get_language
+from .models import User, Group, GroupMembership, GroupPermission, SecretSantaAssignment, GiftIdea, Friendship, Message, Notification
+from .error_messages import get_error_message
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Custom JWT serializer to use email instead of username."""
     username_field = 'email'
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Replace 'username' field with 'email' field
+        if 'username' in self.fields:
+            self.fields['email'] = self.fields.pop('username')
+    
     def validate(self, attrs):
-        # Map 'email' to 'username' for the parent class
-        if 'email' in attrs:
-            attrs['username'] = attrs.pop('email')
+        # The parent class will use username_field='email' to look for attrs['email']
+        # No need to map, just pass through
         return super().validate(attrs)
 
 
@@ -27,10 +34,37 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'username', 'first_name', 'last_name', 'password', 'password2']
+        extra_kwargs = {
+            'email': {'required': True},
+            'username': {'required': True},
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+        }
+    
+    def validate_email(self, value):
+        """Validate email is unique."""
+        if User.objects.filter(email=value).exists():
+            lang = get_language()[:2] if get_language() else 'en'
+            raise serializers.ValidationError(
+                get_error_message('validation.email_exists', lang)
+            )
+        return value
+    
+    def validate_username(self, value):
+        """Validate username is unique."""
+        if User.objects.filter(username=value).exists():
+            lang = get_language()[:2] if get_language() else 'en'
+            raise serializers.ValidationError(
+                get_error_message('validation.username_exists', lang)
+            )
+        return value
     
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
+            lang = get_language()[:2] if get_language() else 'en'
+            raise serializers.ValidationError({
+                "password": get_error_message('validation.password_mismatch', lang)
+            })
         return attrs
     
     def create(self, validated_data):
@@ -41,9 +75,27 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for user details."""
+    profile_complete = serializers.ReadOnlyField()
+    
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'first_name', 'last_name']
+        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'phone', 'profile_picture', 'profile_complete']
+
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating user profile during onboarding."""
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'phone', 'profile_picture', 'profile_complete']
+    
+    def validate(self, attrs):
+        # If profile_complete is being set to True, ensure required fields are present
+        if attrs.get('profile_complete', False):
+            if not attrs.get('first_name') and not self.instance.first_name:
+                raise serializers.ValidationError({'first_name': 'First name is required to complete profile.'})
+            if not attrs.get('last_name') and not self.instance.last_name:
+                raise serializers.ValidationError({'last_name': 'Last name is required to complete profile.'})
+        return attrs
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -59,8 +111,9 @@ class GroupSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'owner', 'min_participants',
             'draw_datetime', 'exchange_date', 'invite_code', 'auto_draw_enabled',
-            'is_drawn', 'draw_completed_at', 'created_at', 'updated_at',
-            'member_count', 'can_draw', 'is_member', 'is_owner'
+            'is_drawn', 'draw_completed_at', 'is_revealed', 'reveal_datetime',
+            'created_at', 'updated_at', 'member_count', 'can_draw', 'is_member', 'is_owner',
+            'visibility', 'location_name', 'location_latitude', 'location_longitude'
         ]
         read_only_fields = ['invite_code', 'is_drawn', 'draw_completed_at', 'created_at', 'updated_at']
     
@@ -83,14 +136,24 @@ class GroupSerializer(serializers.ModelSerializer):
         return False
     
     def validate(self, attrs):
-        """Validate that draw_datetime is before exchange_date."""
+        """Validate that draw_datetime is before exchange_date and public groups have location."""
         draw_datetime = attrs.get('draw_datetime', self.instance.draw_datetime if self.instance else None)
         exchange_date = attrs.get('exchange_date', self.instance.exchange_date if self.instance else None)
+        visibility = attrs.get('visibility', self.instance.visibility if self.instance else 'private')
+        location_name = attrs.get('location_name', self.instance.location_name if self.instance else None)
+        location_latitude = attrs.get('location_latitude', self.instance.location_latitude if self.instance else None)
+        location_longitude = attrs.get('location_longitude', self.instance.location_longitude if self.instance else None)
         
         if draw_datetime and exchange_date:
             if draw_datetime.date() >= exchange_date:
                 raise serializers.ValidationError({
                     'draw_datetime': 'Draw datetime must be before exchange date.'
+                })
+        
+        if visibility == 'public':
+            if not (location_name and location_latitude is not None and location_longitude is not None):
+                raise serializers.ValidationError({
+                    'location_name': 'Public groups must have a location (name, latitude, and longitude).'
                 })
         
         return attrs
@@ -103,6 +166,24 @@ class GroupMembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupMembership
         fields = ['id', 'user', 'joined_at']
+
+
+class GroupPermissionSerializer(serializers.ModelSerializer):
+    """Serializer for GroupPermission."""
+    user = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = GroupPermission
+        fields = ['id', 'user', 'can_edit_settings', 'can_invite_members', 'can_send_messages', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class GroupPermissionUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating GroupPermission."""
+    
+    class Meta:
+        model = GroupPermission
+        fields = ['can_edit_settings', 'can_invite_members', 'can_send_messages']
 
 
 class SecretSantaAssignmentSerializer(serializers.ModelSerializer):
@@ -125,11 +206,13 @@ class GiftIdeaSerializer(serializers.ModelSerializer):
         read_only_fields = ['author', 'created_at', 'updated_at']
     
     def validate(self, attrs):
-        """Validate that user doesn't exceed max ideas per group."""
+        """Validate that user doesn't exceed max ideas per group and no duplicate titles."""
         request = self.context.get('request')
         group = attrs.get('group', self.instance.group if self.instance else None)
+        title = attrs.get('title')
         
         if request and request.user.is_authenticated and group:
+            # Check max ideas per group
             existing_count = GiftIdea.objects.filter(
                 group=group,
                 author=request.user
@@ -139,6 +222,26 @@ class GiftIdeaSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({
                     'title': f'Maximum {GiftIdea.MAX_IDEAS_PER_USER_PER_GROUP} gift ideas per group allowed.'
                 })
+            
+            # Check for duplicate title
+            if title:
+                existing_idea = GiftIdea.objects.filter(
+                    group=group,
+                    author=request.user,
+                    title=title
+                ).exclude(pk=self.instance.pk if self.instance else None).first()
+                
+                if existing_idea:
+                    # Get language from request
+                    language = request.META.get('HTTP_ACCEPT_LANGUAGE', 'en')[:2].lower()
+                    if language not in ['pt', 'en']:
+                        language = 'en'
+                    
+                    from .error_messages import get_error_message
+                    error_msg = get_error_message('gift_ideas.duplicate_title', language)
+                    raise serializers.ValidationError({
+                        'title': error_msg
+                    })
         
         return attrs
 
@@ -147,4 +250,36 @@ class DrawResponseSerializer(serializers.Serializer):
     """Serializer for draw response."""
     message = serializers.CharField()
     task_id = serializers.CharField(required=False)
+
+
+class FriendshipSerializer(serializers.ModelSerializer):
+    """Serializer for Friendship model."""
+    requester = UserSerializer(read_only=True)
+    addressee = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = Friendship
+        fields = ['id', 'requester', 'addressee', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    """Serializer for Message model."""
+    sender = UserSerializer(read_only=True)
+    receiver = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'receiver', 'content', 'is_read', 'created_at']
+        read_only_fields = ['sender', 'is_read', 'created_at']
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    """Serializer for Notification model."""
+    related_user = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = Notification
+        fields = ['id', 'notification_type', 'title', 'message', 'is_read', 'related_user', 'related_group', 'created_at']
+        read_only_fields = ['created_at']
 

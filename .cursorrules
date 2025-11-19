@@ -1,0 +1,80 @@
+# Cursor Rules for Secret Santa Project
+
+## Component Library
+- **ALWAYS** use components from https://ui.aceternity.com/components
+- Prefer Aceternity UI components over custom implementations
+- When a component is needed, first check if Aceternity UI has a similar component
+- Use Aceternity UI's design patterns and styling approach
+
+## Frontend Stack
+- React 18+ with TypeScript
+- Vite as build tool
+- Tailwind CSS for styling
+- React Query for data fetching
+- React Router for navigation
+- i18next for internationalization (Portuguese and English)
+
+## Backend Stack
+- Django 5+ with Django REST Framework
+- PostgreSQL database
+- Celery + Redis for async tasks
+- JWT authentication
+- Custom User model with email as username
+
+## Code Style
+- Use TypeScript strict mode
+- Follow ESLint and Prettier configurations
+- Use functional components with hooks
+- Prefer composition over inheritance
+
+## Error Handling
+- Always show errors in user-friendly modals
+- Use Aceternity UI's Animated Modal component for error displays
+- Format error messages clearly with field-specific errors
+- Support i18n for all error messages
+
+## UI/UX Guidelines
+- Use the project's color palette consistently
+- Implement responsive design for mobile and desktop
+- Use Aceternity UI animations and effects appropriately
+- Ensure accessibility (a11y) standards
+
+## Color Palette
+The project uses the following color scheme:
+
+### Primary Colors
+- **Primary (Main buttons)**: `#135F5C` - Used for primary actions like "Sortear", "Criar grupo"
+  - Hover: `#187670`
+  - Text on primary: `#FFFFFF`
+
+### Secondary Colors
+- **Secondary (Header/AppBar)**: `#D65448` - Used for headers and app bars
+  - Text/icons on secondary: `#FFF8F0` or `#FFFFFF`
+  - Badge variant: `#E56B5F` - Used for badges/tags like "Amigo secreto revelado", "Pendente"
+    - Text on badge: `#FFF8F0`
+
+### Background Colors
+- **Background**: `#FFF8F0` - Main screen background
+- **Surface/Cards**: `#F5D7B2` - Card backgrounds
+- **Accents**: `#D65448` - Small accents
+
+### Button Styles
+- **Primary buttons**: Background `#135F5C`, text `#FFFFFF`, hover `#187670`
+- **Secondary buttons**: Border `#135F5C`, text `#135F5C`, background transparent or `#FFF8F0`, hover background `#F5D7B2`
+
+### Badges/Tags
+- Background: `#E56B5F`
+- Text: `#FFF8F0`
+
+## API Integration
+- Use Axios for HTTP requests
+- Implement proper error handling with try/catch
+- Show loading states during API calls
+- Use React Query for caching and state management
+
+## Internationalization
+- All user-facing text must support Portuguese and English
+- Use i18next for frontend translations
+- Backend errors should support language detection via Accept-Language header
+
+

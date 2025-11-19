@@ -1,0 +1,25 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h2 style="margin: 0 0 20px 0; color: #135F5C; font-size: 24px; font-weight: 600;">Exchange Day is Coming! 🎉</h2>
+
+<p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    Hello {{ member_name }},
+</p>
+
+<p style="margin: 0 0 30px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    The gift exchange for <strong style="color: #135F5C;">"{{ group_name }}"</strong> is on <strong>{{ exchange_date }}</strong>!
+</p>
+
+<!-- Reminder Card -->
+<div style="background-color: #F5D7B2; border-radius: 8px; padding: 20px; margin: 30px 0; border-left: 4px solid #135F5C;">
+    <p style="margin: 0; color: #333333; font-size: 16px; line-height: 1.6;">
+        🎁 <strong>Don't forget:</strong> Prepare your gift and get ready for the exchange!
+    </p>
+</div>
+
+<p style="margin: 30px 0 0 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    We can't wait to see everyone's gifts! 🎄
+</p>
+{% endblock %}
+

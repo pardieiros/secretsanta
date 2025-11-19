@@ -3,41 +3,71 @@
 @tailwind utilities;
 
 @layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overflow-x: hidden;
+  }
+  
   body {
     @apply bg-background text-text-main;
     font-family: 'Inter', system-ui, sans-serif;
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
+  
+  /* Prevent zoom on input focus on iOS */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+  
+  @media screen and (max-width: 420px) {
+    body {
+      font-size: 14px;
+    }
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary text-text-on-dark px-6 py-3 rounded-lg font-medium 
+    @apply bg-primary text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg font-medium text-base
            transition-colors duration-200 hover:bg-primary-light 
-           disabled:opacity-50 disabled:cursor-not-allowed;
+           disabled:opacity-50 disabled:cursor-not-allowed
+           touch-manipulation;
   }
   
   .btn-secondary {
-    @apply border-2 border-primary text-primary px-6 py-3 rounded-lg font-medium 
-           transition-colors duration-200 hover:bg-surface 
-           disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply border-2 border-primary text-primary px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg font-medium text-base
+           bg-transparent transition-colors duration-200 hover:bg-surface 
+           disabled:opacity-50 disabled:cursor-not-allowed
+           touch-manipulation;
   }
   
   .card {
-    @apply bg-surface rounded-xl p-6 shadow-lg border border-border-soft;
+    @apply bg-surface rounded-xl p-4 sm:p-6 shadow-lg border border-border-soft;
   }
   
   .input-field {
-    @apply w-full px-4 py-3 rounded-lg border-2 border-border-soft 
-           bg-background text-text-main placeholder-text-secondary
-           focus:outline-none focus:border-primary transition-colors;
+    @apply w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border-2 border-border-soft 
+           bg-background text-text-main placeholder-text-secondary text-base
+           focus:outline-none focus:border-primary transition-colors
+           min-h-[44px];
   }
   
   .badge {
-    @apply px-3 py-1 rounded-full text-sm font-medium;
+    @apply px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium;
   }
   
   .badge-secondary {
-    @apply badge bg-secondary-light text-text-on-dark;
+    @apply badge bg-secondary-light;
+    color: #FFF8F0;
   }
   
   .badge-success {
@@ -51,5 +81,36 @@
   .badge-error {
     @apply badge bg-error text-text-on-dark;
   }
+}
+
+/* Mobile-specific fixes */
+@media screen and (max-width: 420px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  h1 {
+    font-size: 1.75rem !important;
+  }
+  
+  h2 {
+    font-size: 1.5rem !important;
+  }
+  
+  h3 {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* Prevent horizontal scroll */
+* {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+img, video, iframe {
+  max-width: 100%;
+  height: auto;
 }
 

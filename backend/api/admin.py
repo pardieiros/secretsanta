@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Group, GroupMembership, SecretSantaAssignment, GiftIdea
+from .models import User, Group, GroupMembership, GroupPermission, SecretSantaAssignment, GiftIdea
 
 
 @admin.register(User)
@@ -22,6 +22,13 @@ class GroupAdmin(admin.ModelAdmin):
 class GroupMembershipAdmin(admin.ModelAdmin):
     list_display = ['group', 'user', 'joined_at']
     list_filter = ['joined_at']
+    search_fields = ['group__name', 'user__email']
+
+
+@admin.register(GroupPermission)
+class GroupPermissionAdmin(admin.ModelAdmin):
+    list_display = ['group', 'user', 'can_edit_settings', 'can_invite_members', 'can_send_messages', 'created_at']
+    list_filter = ['can_edit_settings', 'can_invite_members', 'can_send_messages', 'created_at']
     search_fields = ['group__name', 'user__email']
 
 

@@ -10,6 +10,7 @@ export default {
         primary: {
           DEFAULT: '#135F5C',
           light: '#187670',
+          hover: '#187670',
         },
         secondary: {
           DEFAULT: '#D65448',
@@ -22,6 +23,11 @@ export default {
           main: '#1A1A1A',
           secondary: '#4A4A4A',
           'on-dark': '#FFFFFF',
+          'on-light': '#FFF8F0',
+        },
+        badge: {
+          DEFAULT: '#E56B5F',
+          text: '#FFF8F0',
         },
         success: '#2F855A',
         warning: '#D69E2E',
