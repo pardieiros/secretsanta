@@ -1,0 +1,63 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h2 style="margin: 0 0 20px 0; color: #135F5C; font-size: 24px; font-weight: 600;">🎁 Your Secret Santa has been Revealed! 🎉</h2>
+
+<p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    Hello {{ member_name }}!
+</p>
+
+<p style="margin: 0 0 30px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    The moment you've been waiting for is here! Your Secret Santa for <strong style="color: #135F5C;">"{{ group_name }}"</strong> has been revealed! 🎊
+</p>
+
+<!-- Success Card -->
+<div style="background: linear-gradient(135deg, #D65448 0%, #E56B5F 100%); border-radius: 12px; padding: 30px; margin: 30px 0; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <div style="font-size: 64px; margin-bottom: 15px;">🎁</div>
+    <h3 style="margin: 0 0 10px 0; color: #FFFFFF; font-size: 22px; font-weight: 600;">Time to Reveal!</h3>
+    <p style="margin: 0; color: #FFF8F0; font-size: 16px; line-height: 1.6;">
+        Click the button below to open your gift and discover who your Secret Santa is!
+    </p>
+</div>
+
+<!-- Group Details Card -->
+<div style="background-color: #F5D7B2; border-radius: 8px; padding: 20px; margin: 30px 0; border-left: 4px solid #D65448;">
+    <h3 style="margin: 0 0 15px 0; color: #135F5C; font-size: 18px; font-weight: 600;">Group Information</h3>
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 8px 0; color: #666666; font-size: 14px; width: 40%;">Group Name:</td>
+            <td style="padding: 8px 0; color: #333333; font-size: 14px; font-weight: 600;">{{ group_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; color: #666666; font-size: 14px;">Revealed:</td>
+            <td style="padding: 8px 0; color: #333333; font-size: 14px;">{{ reveal_date }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- CTA Button -->
+<table role="presentation" style="width: 100%; margin: 30px 0;">
+    <tr>
+        <td align="center">
+            <a href="{{ group_link }}" style="display: inline-block; padding: 16px 40px; background-color: #D65448; color: #FFFFFF; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background-color 0.3s; box-shadow: 0 2px 4px rgba(214, 84, 72, 0.3);">Open Your Gift! 🎁</a>
+        </td>
+    </tr>
+</table>
+
+<p style="margin: 30px 0 0 0; color: #666666; font-size: 14px; line-height: 1.6;">
+    Or copy and paste this link into your browser:<br>
+    <a href="{{ group_link }}" style="color: #135F5C; word-break: break-all;">{{ group_link }}</a>
+</p>
+
+<div style="background-color: #FFF8F0; border-radius: 8px; padding: 20px; margin: 30px 0; border: 2px dashed #D65448;">
+    <p style="margin: 0 0 10px 0; color: #D65448; font-size: 14px; font-weight: 600;">🎉 The Secret is Out!</p>
+    <p style="margin: 0; color: #666666; font-size: 14px; line-height: 1.6;">
+        Visit the app and click on your gift to reveal your Secret Santa's name and photo!
+    </p>
+</div>
+
+<p style="margin: 30px 0 0 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    Happy gifting! 🎄✨
+</p>
+{% endblock %}
+

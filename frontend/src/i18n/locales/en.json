@@ -1,4 +1,72 @@
 {
+  "home": {
+    "title": "Organize Your Secret Santa",
+    "subtitle": "The easiest and most fun way to organize gift exchanges",
+    "getStarted": "Get Started",
+    "login": "Sign In",
+    "features": {
+      "title": "Why choose our application?",
+      "createGroups": {
+        "title": "Create Private or Public Groups",
+        "description": "Organize private groups with friends or public groups to meet new people. Public groups require a location for the gift exchange meeting."
+      },
+      "addFriends": {
+        "title": "Add Friends",
+        "description": "Build your social network and add friends to participate in Secret Santa groups together."
+      },
+      "secureMessages": {
+        "title": "Secure Messages",
+        "description": "Communicate securely through the app with your friends and group members."
+      },
+      "giftIdeas": {
+        "title": "Choose 5 Gifts",
+        "description": "Each participant chooses up to 5 gifts they would like to receive, making it easier to choose the perfect gift."
+      },
+      "adminDraw": {
+        "title": "Admin Draw",
+        "description": "The group administrator performs the draw when everyone is ready, ensuring a fair and organized process."
+      },
+      "revealDay": {
+        "title": "Revelation on the Right Day",
+        "description": "Discover who your Secret Santa is only on the day marked by the administrator, keeping the surprise until the last moment!"
+      }
+    },
+    "cta": {
+      "title": "Ready to get started?",
+      "description": "Join thousands of people who already organize their Secret Santas with us"
+    },
+    "footer": {
+      "rights": "All rights reserved."
+    }
+  },
+  "passwordReset": {
+    "title": "Forgot Password",
+    "subtitle": "Enter your email and we'll send you a link to reset your password",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "sendLink": "Send Link",
+    "sending": "Sending...",
+    "rememberPassword": "Remember your password?",
+    "backToLogin": "Back to Login",
+    "emailSent": "Email Sent!",
+    "emailSentMessage": "If an account exists with this email, we've sent a link to reset your password. Please check your inbox.",
+    "resetTitle": "Reset Password",
+    "resetSubtitle": "Enter your new password",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "••••••••",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "••••••••",
+    "resetPassword": "Reset Password",
+    "resetting": "Resetting...",
+    "resetSuccess": "Password Reset!",
+    "resetSuccessMessage": "Your password has been reset successfully. You will be redirected to login shortly.",
+    "invalidToken": "Invalid Token",
+    "invalidTokenMessage": "The password reset link is invalid or has expired. Please request a new link.",
+    "requestNewLink": "Request New Link",
+    "passwordsDontMatch": "Passwords do not match",
+    "requestError": "Error requesting password reset. Please try again.",
+    "resetError": "Error resetting password. Please check the token or request a new link."
+  },
   "login": {
     "title": "Welcome Back",
     "subtitle": "Sign in to your account",
@@ -13,6 +81,7 @@
     "signUp": "Sign up",
     "or": "Or",
     "continueWithGoogle": "Continue with Google",
+    "forgotPassword": "Forgot password?",
     "errors": {
       "invalidCredentials": "Invalid email or password",
       "required": "This field is required",
@@ -48,6 +117,7 @@
   "errors": {
     "authenticationError": "Authentication Error",
     "authFailed": "Could not authenticate with Google. Please try again.",
+    "emailAlreadyRegistered": "An account with this email already exists. Please login with your password instead.",
     "processingLogin": "Processing login...",
     "validationFailed": "Validation failed",
     "fieldRequired": "This field is required",
@@ -301,6 +371,9 @@
     "secretSantaGiftIdeas": "My Secret Santa's Gift Ideas",
     "secretSantaGiftIdeasDescription": "Gift ideas from {{name}} (your Secret Santa):",
     "noSecretSantaGiftIdeas": "Your Secret Santa hasn't added any gift ideas yet.",
+    "viewMySantaIdeas": "View My Santa Ideas",
+    "mySecretSantaGiftIdeas": "My Secret Santa's Gift Ideas",
+    "mySecretSantaGiftIdeasDescription": "These are the gift ideas from your Secret Santa. You'll discover who it is on the reveal date!",
     "addFriends": "Add Friends",
     "addFriendsToGroup": "Add Friends to Group",
     "addFriendsToGroupSubtitle": "Select friends you want to add to the group",
@@ -309,7 +382,11 @@
     "close": "Close",
     "invitationSent": "Invitation Sent!",
     "invitationSentMessage": "The invitation has been sent to {{name}}.",
-    "emailAndNotificationSent": "An email has been sent and a notification has been created."
+    "emailAndNotificationSent": "An email has been sent and a notification has been created.",
+    "openYourGift": "Open Your Gift!",
+    "clickGiftToReveal": "Click on the gift to reveal your Secret Santa!",
+    "keepClicking": "Keep clicking!",
+    "yourSecretSantaIs": "Your Secret Santa is"
   },
   "giftIdeas": {
     "title": "Gift Ideas",
@@ -367,6 +444,159 @@
     "reject": "Reject",
     "rejectConfirm": "Are you sure you want to reject this invite?",
     "close": "Close"
+  },
+  "cookies": {
+    "banner": {
+      "title": "We Use Cookies",
+      "description": "We use cookies to improve your experience, analyze site traffic, and personalize content. By continuing to browse, you agree to our use of cookies.",
+      "learnMore": "Learn more",
+      "acceptAll": "Accept all",
+      "rejectNonEssential": "Reject non-essential",
+      "customize": "Customize"
+    },
+    "settings": {
+      "title": "Cookie Settings",
+      "subtitle": "Manage your cookie preferences",
+      "close": "Close",
+      "cancel": "Cancel",
+      "savePreferences": "Save Preferences",
+      "acceptAll": "Accept All",
+      "rejectAll": "Reject All",
+      "alwaysActive": "Always active",
+      "toggle": "Toggle",
+      "info": "For more information about how we use cookies, see our",
+      "policyLink": "Cookie Policy",
+      "necessary": {
+        "title": "Necessary Cookies",
+        "description": "These cookies are essential for the website to function and cannot be disabled. They include session and security cookies."
+      },
+      "functional": {
+        "title": "Functional Cookies",
+        "description": "These cookies allow the website to provide enhanced functionality and personalization, such as remembering your language preferences."
+      },
+      "analytics": {
+        "title": "Analytics Cookies",
+        "description": "These cookies help us understand how visitors interact with the website by providing information about areas visited, time spent on the site, and issues encountered."
+      },
+      "marketing": {
+        "title": "Marketing Cookies",
+        "description": "These cookies are used to track visitors across different websites to display relevant and personalized ads."
+      }
+    },
+    "settingsButton": "Cookie Settings",
+    "policy": {
+      "title": "Cookie Policy",
+      "lastUpdated": "Last updated",
+      "backToHome": "Back to Home",
+      "whoWeAre": {
+        "title": "Who We Are",
+        "description": "We are a web application dedicated to organizing Secret Santa groups and creating a social network around this activity. Our mission is to facilitate the organization of gift exchanges in a fun and secure way.",
+        "dataController": "Data controller",
+        "contact": "Secret Santa App"
+      },
+      "whatAreCookies": {
+        "title": "What Are Cookies",
+        "description": "Cookies are small text files that are placed on your device (computer, tablet, or mobile phone) when you visit a website. Cookies allow the website to recognize your device and store some information about your preferences or past actions.",
+        "types": "There are different types of cookies: session cookies (temporary, deleted when you close the browser) and persistent cookies (remain on your device until they expire or are deleted)."
+      },
+      "types": {
+        "title": "Types of Cookies We Use",
+        "necessary": {
+          "title": "Necessary Cookies",
+          "description": "These cookies are strictly necessary for the website to function. They allow you to navigate the website and use essential features, such as secure areas and shopping carts. These cookies cannot be disabled."
+        },
+        "functional": {
+          "title": "Functional Cookies",
+          "description": "These cookies allow the website to provide enhanced functionality and personalization. They may be set by us or by external providers whose services we have added to our pages."
+        },
+        "analytics": {
+          "title": "Analytics Cookies",
+          "description": "These cookies help us understand how visitors interact with the website by providing information about areas visited, time spent on the site, and issues encountered. This information helps us improve the website's performance."
+        },
+        "marketing": {
+          "title": "Marketing Cookies",
+          "description": "These cookies are used to track visitors across different websites. The purpose is to display relevant and engaging ads for the individual user and, therefore, more valuable for third-party publishers and advertisers."
+        }
+      },
+      "cookiesWeUse": {
+        "title": "Cookies We Specifically Use"
+      },
+      "table": {
+        "name": "Name",
+        "purpose": "Purpose",
+        "type": "Type",
+        "duration": "Duration",
+        "firstParty": "First-party",
+        "thirdParty": "Third-party",
+        "session": "Session",
+        "twelveMonths": "12 months",
+        "twoYears": "2 years",
+        "oneDay": "1 day",
+        "sessionid": {
+          "purpose": "Maintain authenticated user session"
+        },
+        "csrftoken": {
+          "purpose": "Protection against CSRF (Cross-Site Request Forgery) attacks"
+        },
+        "cookieConsent": {
+          "purpose": "Store user cookie consent preferences"
+        },
+        "analytics": {
+          "purpose": "Collect information about how visitors use the website",
+          "note": "Only enabled with your consent"
+        }
+      },
+      "managePreferences": {
+        "title": "How You Can Manage Your Preferences",
+        "description": "You can change or withdraw your consent at any time using the button below or through the 'Cookie Settings' link available in the application footer.",
+        "browser": "You can also manage cookies directly in your browser. Most browsers allow you to refuse or accept cookies, as well as delete existing cookies. Check your browser's instructions for more information."
+      },
+      "legalBasis": {
+        "title": "Legal Basis and GDPR",
+        "description": "Strictly necessary cookies are used based on our legitimate interest in ensuring the secure and efficient operation of the website. Other cookies (functional, analytics, and marketing) are used only with your explicit consent, in accordance with the General Data Protection Regulation (GDPR) and the ePrivacy Directive.",
+        "withdraw": "You have the right to withdraw your consent at any time, without affecting the lawfulness of processing based on consent before its withdrawal."
+      },
+      "rights": {
+        "title": "Data Subject Rights",
+        "description": "Under the GDPR, you have the following rights:",
+        "access": "Right of access - you can request information about the personal data we process",
+        "rectification": "Right to rectification - you can request correction of incorrect data",
+        "erasure": "Right to erasure - you can request deletion of your personal data",
+        "limit": "Right to restriction of processing - you can request limitation of processing of your data",
+        "oppose": "Right to object - you can object to the processing of your personal data",
+        "portability": "Right to data portability - you can request transfer of your data to another controller",
+        "contact": "To exercise these rights, contact us at"
+      },
+      "updates": {
+        "title": "Updates to This Policy",
+        "description": "We may update this Cookie Policy periodically to reflect changes in our practices or for other operational, legal, or regulatory reasons. We recommend that you review this page regularly to stay informed about our use of cookies."
+      }
+    }
+  },
+  "pushNotifications": {
+    "title": "Push Notifications",
+    "description": "Receive notifications in your browser even when the app is closed. You'll be notified about new groups, messages, and important updates.",
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "blocked": "Blocked",
+      "unsupported": "Not Supported",
+      "enabledDescription": "Push notifications are enabled. You'll receive notifications about groups and messages.",
+      "disabledDescription": "Push notifications are disabled. Click 'Enable Notifications' to start receiving notifications.",
+      "blockedDescription": "Notifications are blocked in browser settings. You need to enable them manually.",
+      "unsupportedDescription": "Your browser does not support push notifications."
+    },
+    "activate": "Enable Notifications",
+    "deactivate": "Disable Notifications",
+    "activating": "Enabling...",
+    "deactivating": "Disabling...",
+    "test": "Test Notification",
+    "error": "Error",
+    "blockedInstructions": "To enable notifications:",
+    "blockedStep1": "Open browser settings",
+    "blockedStep2": "Look for 'Notifications' or 'Permissions'",
+    "blockedStep3": "Allow notifications for this site and reload the page",
+    "info": "Notifications are sent even when the app is closed. You can disable them at any time."
   }
 }
 

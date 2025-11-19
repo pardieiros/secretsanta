@@ -9,6 +9,9 @@ import { notificationAPI, messageAPI } from '../lib/api'
 import Avatar from './Avatar'
 import { format } from 'date-fns'
 import logo from '../assets/img/logo_128.png'
+import CookieBanner from '../features/cookies/CookieBanner'
+import CookieSettingsModal from '../features/cookies/CookieSettingsModal'
+import CookieSettingsButton from '../features/cookies/CookieSettingsButton'
 
 export default function Layout() {
   const { t, i18n } = useTranslation()
@@ -600,6 +603,22 @@ export default function Layout() {
       <main className="container mx-auto px-0 sm:px-4 py-4 sm:py-8">
         <Outlet />
       </main>
+
+      {/* Footer with Cookie Settings Link */}
+      <footer className="mt-auto py-4 px-4 border-t border-border-soft bg-surface/30">
+        <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-text-secondary">
+          <p>© {new Date().getFullYear()} Secret Santa. {t('home.footer.rights')}</p>
+          <div className="flex gap-4">
+            <CookieSettingsButton variant="link" />
+          </div>
+        </div>
+      </footer>
+
+      {/* Cookie Banner */}
+      <CookieBanner />
+
+      {/* Cookie Settings Modal */}
+      <CookieSettingsModal />
     </div>
   )
 }

@@ -269,3 +269,135 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.user.email}: {self.title}"
 
+
+class PasswordResetToken(models.Model):
+    """Model for password reset tokens."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset_tokens')
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['token', 'used']),
+            models.Index(fields=['user', 'used', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Password reset token for {self.user.email}"
+    
+    def is_valid(self):
+        """Check if token is valid (not used and not expired)."""
+        from django.utils import timezone
+        return not self.used and timezone.now() < self.expires_at
+
+
+class PushSubscription(models.Model):
+    """
+    Model to store Web Push notification subscriptions.
+    Supports multiple devices per user (e.g., desktop + mobile).
+    GDPR compliant: stores minimal data (endpoint + keys, no personal data in keys).
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='push_subscriptions',
+        null=True,
+        blank=True
+    )
+    
+    # Push subscription data (required for Web Push API)
+    endpoint = models.TextField(unique=True, db_index=True)  # Unique per browser/device
+    p256dh = models.TextField()  # Public key for encryption
+    auth = models.TextField()  # Authentication secret
+    
+    # Optional metadata for better management
+    user_agent = models.TextField(blank=True, null=True)
+    device_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('desktop', 'Desktop'),
+            ('mobile', 'Mobile'),
+            ('tablet', 'Tablet'),
+            ('unknown', 'Unknown'),
+        ],
+        default='unknown'
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['endpoint']),
+        ]
+    
+    def __str__(self):
+        device_info = f"{self.device_type}" if self.device_type != 'unknown' else "device"
+        user_info = self.user.email if self.user else "anonymous"
+        return f"Push subscription for {user_info} ({device_info})"
+
+
+class CookieConsent(models.Model):
+    """
+    Model to store cookie consent records for audit purposes.
+    Complies with GDPR requirements for consent tracking.
+    """
+    # User can be null for anonymous users (we'll use a pseudonymous ID)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='cookie_consents',
+        null=True,
+        blank=True
+    )
+    
+    # Pseudonymous ID for anonymous users (random string, not personal data)
+    anonymous_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    
+    # Consent preferences
+    necessary = models.BooleanField(default=True)
+    functional = models.BooleanField(default=False)
+    analytics = models.BooleanField(default=False)
+    marketing = models.BooleanField(default=False)
+    
+    # Metadata
+    consent_version = models.IntegerField(default=1)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    # Audit fields (data minimization: truncated IP, optional user agent)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    ip_truncated = models.CharField(max_length=20, blank=True, null=True)  # e.g., "192.168.1.0"
+    user_agent = models.TextField(blank=True, null=True)  # Optional, for debugging
+    
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['user', '-timestamp']),
+            models.Index(fields=['anonymous_id', '-timestamp']),
+        ]
+    
+    def __str__(self):
+        identifier = self.user.email if self.user else (self.anonymous_id or 'Anonymous')
+        return f"Cookie consent for {identifier} at {self.timestamp}"
+    
+    def save(self, *args, **kwargs):
+        """Truncate IP address for privacy (last octet set to 0)."""
+        if self.ip_address and not self.ip_truncated:
+            ip_str = str(self.ip_address)
+            if '.' in ip_str:  # IPv4
+                parts = ip_str.split('.')
+                if len(parts) == 4:
+                    self.ip_truncated = '.'.join(parts[:3]) + '.0'
+            elif ':' in ip_str:  # IPv6 - truncate last segment
+                parts = ip_str.split(':')
+                if len(parts) > 1:
+                    parts[-1] = '0'
+                    self.ip_truncated = ':'.join(parts)
+        super().save(*args, **kwargs)
+

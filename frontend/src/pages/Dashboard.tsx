@@ -2,18 +2,15 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { Users, MessageCircle, UsersRound, ArrowRight, Plus, UserPlus, LogIn } from 'lucide-react'
+import { Users, MessageCircle, UsersRound, Plus, UserPlus, LogIn } from 'lucide-react'
 import { groupAPI, friendshipAPI, messageAPI } from '../lib/api'
-import { useAuth } from '../contexts/AuthContext'
 import Card from '../components/Card'
 import Button from '../components/Button'
 import Avatar from '../components/Avatar'
-import { format } from 'date-fns'
 
 export default function Dashboard() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { user } = useAuth()
 
   // Fetch data for widgets
   const { data: groupsData } = useQuery({

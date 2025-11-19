@@ -18,14 +18,16 @@ from django.utils.translation import get_language, activate
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User, Group, GroupMembership, GroupPermission, SecretSantaAssignment, GiftIdea, Friendship, FriendInvite, Message, Notification
+from .models import User, Group, GroupMembership, GroupPermission, SecretSantaAssignment, GiftIdea, Friendship, FriendInvite, Message, Notification, PasswordResetToken, CookieConsent, PushSubscription
 from .serializers import (
     UserRegistrationSerializer, UserSerializer, UserProfileUpdateSerializer,
     GroupSerializer, GroupMembershipSerializer, GroupPermissionSerializer, GroupPermissionUpdateSerializer,
     SecretSantaAssignmentSerializer, GiftIdeaSerializer, DrawResponseSerializer, FriendshipSerializer,
-    MessageSerializer, NotificationSerializer
+    MessageSerializer, NotificationSerializer, PasswordResetRequestSerializer, PasswordResetSerializer,
+    CookieConsentSerializer, CookieConsentCreateSerializer,
+    PushSubscriptionSerializer, PushSubscriptionCreateSerializer
 )
-from .tasks import execute_draw_task, send_invite_email_task, send_friend_invite_email_task
+from .tasks import execute_draw_task, send_invite_email_task, send_friend_invite_email_task, send_reveal_notifications, send_password_reset_email_task
 from .error_messages import get_error_message
 
 
@@ -157,17 +159,25 @@ class GoogleOAuthView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Get or create user with Google data
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    'username': email.split('@')[0],
-                    'first_name': first_name or '',
-                    'last_name': last_name or '',
-                    'profile_picture': picture or '',
-                    'profile_complete': False,  # New users start with incomplete profile
-                }
-            )
+            # Check if user exists - if they do, just login (allow Google OAuth even if they have password)
+            try:
+                existing_user = User.objects.get(email=email)
+                # User exists - allow login via Google OAuth even if they have a password
+                # This allows users to use either method to login
+                user = existing_user
+                created = False
+            except User.DoesNotExist:
+                # Create new user
+                user = User.objects.create_user(
+                    email=email,
+                    username=email.split('@')[0],
+                    first_name=first_name or '',
+                    last_name=last_name or '',
+                    profile_picture=picture or '',
+                    profile_complete=False,
+                    password=None  # No password for Google OAuth users
+                )
+                created = True
             
             # Update user info if not new (but don't override if user already has data)
             if not created:
@@ -238,6 +248,111 @@ class GoogleOAuthView(APIView):
                 {'error': f'Unexpected error: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class PasswordResetRequestView(APIView):
+    """Request password reset endpoint."""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """Send password reset email."""
+        # Get language from request header
+        lang = request.headers.get('Accept-Language', 'en')[:2] or 'en'
+        if lang not in ['en', 'pt']:
+            lang = 'en'
+        activate(lang)
+        
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            
+            # Don't reveal if email exists for security reasons
+            # Always return success message
+            try:
+                user = User.objects.get(email=email)
+                # Create password reset token
+                import secrets
+                token = secrets.token_urlsafe(32)
+                expires_at = timezone.now() + timezone.timedelta(hours=24)
+                
+                # Invalidate old tokens for this user
+                PasswordResetToken.objects.filter(user=user, used=False).update(used=True)
+                
+                # Create new token
+                reset_token = PasswordResetToken.objects.create(
+                    user=user,
+                    token=token,
+                    expires_at=expires_at
+                )
+                
+                # Send email via Celery task
+                send_password_reset_email_task.delay(user.id, token)
+                
+            except User.DoesNotExist:
+                # User doesn't exist, but don't reveal this
+                pass
+            
+            # Always return success message (security best practice)
+            return Response({
+                'message': 'If an account exists with this email, a password reset link has been sent.'
+            }, status=status.HTTP_200_OK)
+        
+        return Response({
+            'error': get_error_message('validation.validation_failed', lang),
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordResetView(APIView):
+    """Password reset endpoint."""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """Reset password with token."""
+        # Get language from request header
+        lang = request.headers.get('Accept-Language', 'en')[:2] or 'en'
+        if lang not in ['en', 'pt']:
+            lang = 'en'
+        activate(lang)
+        
+        serializer = PasswordResetSerializer(data=request.data)
+        if serializer.is_valid():
+            token = serializer.validated_data['token']
+            password = serializer.validated_data['password']
+            
+            try:
+                reset_token = PasswordResetToken.objects.get(token=token)
+                
+                if not reset_token.is_valid():
+                    return Response({
+                        'error': get_error_message('auth.invalid_reset_token', lang)
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Update user password
+                user = reset_token.user
+                user.set_password(password)
+                user.save()
+                
+                # Mark token as used
+                reset_token.used = True
+                reset_token.save()
+                
+                # Invalidate all other tokens for this user
+                PasswordResetToken.objects.filter(user=user, used=False).update(used=True)
+                
+                return Response({
+                    'message': 'Password reset successfully. You can now login with your new password.'
+                }, status=status.HTTP_200_OK)
+                
+            except PasswordResetToken.DoesNotExist:
+                return Response({
+                    'error': get_error_message('auth.invalid_reset_token', lang)
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            'error': get_error_message('validation.validation_failed', lang),
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -326,6 +441,15 @@ class GroupViewSet(viewsets.ModelViewSet):
         
         # Create membership
         GroupMembership.objects.create(group=group, user=request.user)
+        
+        # Send push notification to the user who joined
+        # Uncomment to enable push notifications when joining a group
+        # from .push_notifications import send_group_invite_notification
+        # send_group_invite_notification(
+        #     user=request.user,
+        #     group_name=group.name,
+        #     inviter_name=group.owner.get_full_name() or group.owner.email
+        # )
         
         serializer = self.get_serializer(group)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -704,7 +828,8 @@ class GroupViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['get'])
     def secret_santa_gift_ideas(self, request, pk=None):
-        """Get gift ideas of the user's Secret Santa (who drew me)."""
+        """Get gift ideas of the user's Secret Santa (who drew me).
+        Can be accessed before reveal, but user won't know who it is until reveal."""
         group = self.get_object()
         
         # Check if user is a member
@@ -720,22 +845,6 @@ class GroupViewSet(viewsets.ModelViewSet):
                 'ideas': []
             }, status=status.HTTP_200_OK)
         
-        # Check if revealed (manual or automatic)
-        now = timezone.now()
-        is_revealed = group.is_revealed or (group.reveal_datetime and now >= group.reveal_datetime)
-        
-        if not is_revealed:
-            # Check if exchange_date has passed (fallback)
-            today = timezone.now().date()
-            if today < group.exchange_date:
-                from datetime import date
-                reveal_date = group.reveal_datetime.date() if group.reveal_datetime else group.exchange_date
-                return Response({
-                    'message': f'Secret Santa will be revealed on {reveal_date}',
-                    'reveal_date': reveal_date.isoformat() if isinstance(reveal_date, date) else str(reveal_date),
-                    'ideas': []
-                }, status=status.HTTP_200_OK)
-        
         try:
             # Get who drew me (my Secret Santa)
             assignment = SecretSantaAssignment.objects.get(
@@ -743,6 +852,7 @@ class GroupViewSet(viewsets.ModelViewSet):
                 receiver=request.user
             )
             # Get gift ideas of my Secret Santa (the giver)
+            # User can see the ideas even before reveal, but won't know who it is
             from .models import GiftIdea
             ideas = GiftIdea.objects.filter(
                 group=group,
@@ -752,9 +862,10 @@ class GroupViewSet(viewsets.ModelViewSet):
             serializer = GiftIdeaSerializer(ideas, many=True)
             return Response(serializer.data)
         except SecretSantaAssignment.DoesNotExist:
+            # Assignment might still be being created by Celery task
             return Response(
-                {'error': 'Assignment not found'},
-                status=status.HTTP_404_NOT_FOUND
+                [],
+                status=status.HTTP_200_OK
             )
     
     @action(detail=True, methods=['post'])
@@ -804,6 +915,11 @@ class GroupViewSet(viewsets.ModelViewSet):
             group.is_revealed = True
             group.reveal_datetime = timezone.now()
             group.save()
+            
+            # Send notifications and emails
+            from .tasks import send_reveal_notifications
+            send_reveal_notifications.delay(group.id)
+            
             return Response({
                 'message': 'Secret santas have been revealed',
                 'reveal_datetime': group.reveal_datetime
@@ -1242,6 +1358,17 @@ class MessageViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError({'receiver': 'You can only message your friends.'})
         
         message = serializer.save(sender=self.request.user, receiver=receiver)
+        
+        # Send push notification to the receiver
+        # Uncomment to enable push notifications for new messages
+        # from .push_notifications import send_message_notification
+        # sender_name = self.request.user.get_full_name() or self.request.user.email
+        # message_preview = message.content[:100]  # First 100 characters
+        # send_message_notification(
+        #     user=receiver,
+        #     sender_name=sender_name,
+        #     message_preview=message_preview
+        # )
     
     @action(detail=False, methods=['get'])
     def conversations(self, request):
@@ -1366,4 +1493,210 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         notification.delete()
         
         return Response({'message': 'Group invite rejected'}, status=status.HTTP_200_OK)
+
+
+class CookieConsentView(APIView):
+    """
+    View for managing cookie consent.
+    GET: Returns the latest consent for authenticated user (if logged in)
+    POST: Creates a new consent record
+    """
+    permission_classes = [AllowAny]  # Allow anonymous users
+    
+    def get(self, request):
+        """Get the latest consent for the authenticated user."""
+        if not request.user.is_authenticated:
+            return Response(
+                {'error': 'Authentication required to retrieve consent'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        consent = CookieConsent.objects.filter(user=request.user).order_by('-timestamp').first()
+        
+        if not consent:
+            return Response({'consent': None})
+        
+        serializer = CookieConsentSerializer(consent)
+        return Response({'consent': serializer.data})
+    
+    def post(self, request):
+        """Create a new consent record."""
+        serializer = CookieConsentCreateSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get client IP and user agent
+        ip_address = self._get_client_ip(request)
+        user_agent = request.META.get('HTTP_USER_AGENT', '')[:500]  # Limit length
+        
+        # Generate anonymous ID if user is not authenticated
+        anonymous_id = None
+        if not request.user.is_authenticated:
+            import secrets
+            anonymous_id = secrets.token_urlsafe(32)
+        
+        # Create consent record
+        consent = CookieConsent.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            anonymous_id=anonymous_id,
+            necessary=serializer.validated_data.get('necessary', True),
+            functional=serializer.validated_data.get('functional', False),
+            analytics=serializer.validated_data.get('analytics', False),
+            marketing=serializer.validated_data.get('marketing', False),
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+        
+        response_serializer = CookieConsentSerializer(consent)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+    
+    def _get_client_ip(self, request):
+        """Extract client IP address from request."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class PushVapidPublicKeyView(APIView):
+    """
+    View to return VAPID public key for frontend.
+    Public key is safe to expose to clients.
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Return VAPID public key."""
+        from django.conf import settings
+        public_key = getattr(settings, 'WEBPUSH_VAPID_PUBLIC_KEY', None)
+        
+        if not public_key:
+            return Response(
+                {'error': 'VAPID public key not configured'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        return Response({'public_key': public_key})
+
+
+class PushSubscribeView(APIView):
+    """
+    View to subscribe user to push notifications.
+    Stores push subscription linked to authenticated user.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Create or update push subscription."""
+        serializer = PushSubscriptionCreateSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        endpoint = serializer.validated_data['endpoint']
+        keys = serializer.validated_data['keys']
+        
+        # Detect device type from user agent
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        device_type = self._detect_device_type(user_agent)
+        
+        # Create or update subscription
+        subscription, created = PushSubscription.objects.update_or_create(
+            endpoint=endpoint,
+            defaults={
+                'user': request.user,
+                'p256dh': keys['p256dh'],
+                'auth': keys['auth'],
+                'user_agent': user_agent[:500],  # Limit length
+                'device_type': device_type,
+            }
+        )
+        
+        response_serializer = PushSubscriptionSerializer(subscription)
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        )
+    
+    def _detect_device_type(self, user_agent):
+        """Detect device type from user agent string."""
+        if not user_agent:
+            return 'unknown'
+        
+        user_agent_lower = user_agent.lower()
+        
+        if any(mobile in user_agent_lower for mobile in ['mobile', 'android', 'iphone', 'ipod']):
+            return 'mobile'
+        elif any(tablet in user_agent_lower for tablet in ['tablet', 'ipad']):
+            return 'tablet'
+        else:
+            return 'desktop'
+
+
+class PushUnsubscribeView(APIView):
+    """
+    View to unsubscribe user from push notifications.
+    Deletes push subscription for the given endpoint.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Delete push subscription."""
+        endpoint = request.data.get('endpoint')
+        
+        if not endpoint:
+            return Response(
+                {'error': 'endpoint is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Only delete subscriptions belonging to the current user
+        deleted_count, _ = PushSubscription.objects.filter(
+            user=request.user,
+            endpoint=endpoint
+        ).delete()
+        
+        if deleted_count == 0:
+            return Response(
+                {'error': 'Subscription not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        return Response({'message': 'Unsubscribed successfully'})
+
+
+class PushTestView(APIView):
+    """
+    View to send a test push notification to the current user.
+    Useful for testing push notification setup.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Send test notification to all user's subscriptions."""
+        from .push_notifications import send_web_push_to_user
+        
+        payload = {
+            'title': 'Notificação de teste',
+            'body': 'As notificações do Amigo Secreto estão a funcionar ✅',
+            'icon': '/src/assets/img/logo_128.png',
+            'badge': '/src/assets/img/logo_64.png',
+            'url': '/dashboard',
+            'tag': 'test-notification',
+        }
+        
+        try:
+            results = send_web_push_to_user(request.user, payload)
+            return Response({
+                'message': 'Test notification sent',
+                'results': results,
+            })
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 

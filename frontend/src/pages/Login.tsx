@@ -21,7 +21,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [showLanguageMenu, setShowLanguageMenu] = useState(false)
-  const { login, setTokens } = useAuth()
+  const { login } = useAuth()
   const navigate = useNavigate()
 
   const changeLanguage = (lng: string) => {
@@ -215,6 +215,12 @@ export default function Login() {
           {t('login.noAccount')}{' '}
           <Link to="/register" className="text-primary hover:underline font-medium">
             {t('login.signUp')}
+          </Link>
+        </p>
+        
+        <p className="mt-4 text-center">
+          <Link to="/forgot-password" className="text-primary hover:underline text-sm font-medium">
+            {t('login.forgotPassword')}
           </Link>
         </p>
       </Card>

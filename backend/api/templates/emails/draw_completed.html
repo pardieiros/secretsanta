@@ -1,0 +1,67 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+<h2 style="margin: 0 0 20px 0; color: #135F5C; font-size: 24px; font-weight: 600;">🎉 The Draw is Complete! 🎁</h2>
+
+<p style="margin: 0 0 20px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    Hello {{ member_name }}!
+</p>
+
+<p style="margin: 0 0 30px 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    The Secret Santa draw for <strong style="color: #135F5C;">"{{ group_name }}"</strong> has been completed! 🎊
+</p>
+
+<!-- Success Card -->
+<div style="background: linear-gradient(135deg, #135F5C 0%, #187670 100%); border-radius: 12px; padding: 30px; margin: 30px 0; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <div style="font-size: 48px; margin-bottom: 15px;">🎅</div>
+    <h3 style="margin: 0 0 10px 0; color: #FFFFFF; font-size: 22px; font-weight: 600;">Your Secret Santa is Ready!</h3>
+    <p style="margin: 0; color: #FFF8F0; font-size: 16px; line-height: 1.6;">
+        Check out the gift ideas from your Secret Santa and start preparing the perfect gift!
+    </p>
+</div>
+
+<!-- Group Details Card -->
+<div style="background-color: #F5D7B2; border-radius: 8px; padding: 20px; margin: 30px 0; border-left: 4px solid #135F5C;">
+    <h3 style="margin: 0 0 15px 0; color: #135F5C; font-size: 18px; font-weight: 600;">Group Information</h3>
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 8px 0; color: #666666; font-size: 14px; width: 40%;">Group Name:</td>
+            <td style="padding: 8px 0; color: #333333; font-size: 14px; font-weight: 600;">{{ group_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; color: #666666; font-size: 14px;">Exchange Date:</td>
+            <td style="padding: 8px 0; color: #333333; font-size: 14px;">{{ exchange_date }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px 0; color: #666666; font-size: 14px;">Draw Completed:</td>
+            <td style="padding: 8px 0; color: #333333; font-size: 14px;">{{ draw_date }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- CTA Button -->
+<table role="presentation" style="width: 100%; margin: 30px 0;">
+    <tr>
+        <td align="center">
+            <a href="{{ group_link }}" style="display: inline-block; padding: 16px 40px; background-color: #135F5C; color: #FFFFFF; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background-color 0.3s; box-shadow: 0 2px 4px rgba(19, 95, 92, 0.3);">View My Secret Santa's Gift Ideas 🎁</a>
+        </td>
+    </tr>
+</table>
+
+<p style="margin: 30px 0 0 0; color: #666666; font-size: 14px; line-height: 1.6;">
+    Or copy and paste this link into your browser:<br>
+    <a href="{{ group_link }}" style="color: #135F5C; word-break: break-all;">{{ group_link }}</a>
+</p>
+
+<div style="background-color: #FFF8F0; border-radius: 8px; padding: 20px; margin: 30px 0; border: 2px dashed #D65448;">
+    <p style="margin: 0 0 10px 0; color: #D65448; font-size: 14px; font-weight: 600;">💡 Remember:</p>
+    <p style="margin: 0; color: #666666; font-size: 14px; line-height: 1.6;">
+        You can see your Secret Santa's gift ideas, but you won't know who it is until the reveal date! The mystery makes it more fun! 🎭
+    </p>
+</div>
+
+<p style="margin: 30px 0 0 0; color: #333333; font-size: 16px; line-height: 1.6;">
+    Happy gifting! 🎄✨
+</p>
+{% endblock %}
+

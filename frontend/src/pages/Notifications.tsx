@@ -44,7 +44,6 @@ export default function Notifications() {
   })
 
   const unreadCount = unreadData?.count || 0
-  const unreadNotifications = notifications.filter((n: any) => !n.is_read)
 
   const getUserName = (user: any) => {
     if (user?.first_name && user?.last_name) {

@@ -67,6 +67,16 @@ export const authAPI = {
     const response = await api.post('/auth/google/', { code })
     return response.data
   },
+  
+  requestPasswordReset: async (email: string) => {
+    const response = await api.post('/auth/password-reset/request/', { email })
+    return response.data
+  },
+  
+  resetPassword: async (token: string, password: string, password2: string) => {
+    const response = await api.post('/auth/password-reset/', { token, password, password2 })
+    return response.data
+  },
 }
 
 // User API
@@ -316,6 +326,53 @@ export const notificationAPI = {
   
   rejectGroupInvite: async (notificationId: number) => {
     const response = await api.delete(`/notifications/${notificationId}/reject_group_invite/`)
+    return response.data
+  },
+}
+
+// Cookie Consent API
+export const cookieAPI = {
+  getConsent: async () => {
+    const response = await api.get('/cookies/consent/')
+    return response.data
+  },
+  
+  saveConsent: async (data: {
+    necessary: boolean
+    functional: boolean
+    analytics: boolean
+    marketing: boolean
+  }) => {
+    const response = await api.post('/cookies/consent/', data)
+    return response.data
+  },
+}
+
+// Push Notifications API
+export const pushAPI = {
+  getVapidPublicKey: async () => {
+    const response = await api.get('/push/vapid-public-key/')
+    return response.data.public_key
+  },
+  
+  subscribe: async (subscription: {
+    endpoint: string
+    keys: {
+      p256dh: string
+      auth: string
+    }
+  }) => {
+    const response = await api.post('/push/subscribe/', subscription)
+    return response.data
+  },
+  
+  unsubscribe: async (data: { endpoint: string }) => {
+    const response = await api.post('/push/unsubscribe/', data)
+    return response.data
+  },
+  
+  test: async () => {
+    const response = await api.post('/push/test/')
     return response.data
   },
 }

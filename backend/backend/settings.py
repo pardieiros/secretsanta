@@ -221,3 +221,25 @@ GOOGLE_OAUTH2_CLIENT_ID = os.getenv("GOOGLE_OAUTH2_CLIENT_ID")
 GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH2_CLIENT_SECRET")
 GOOGLE_OAUTH2_REDIRECT_URI = os.getenv('GOOGLE_OAUTH2_REDIRECT_URI', f'{FRONTEND_URL}/auth/google/callback')
 
+# Session Cookie Security Settings (GDPR/ePrivacy compliant)
+# These settings ensure session cookies are secure and httpOnly
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = not DEBUG  # Only secure in production (HTTPS)
+SESSION_COOKIE_SAMESITE = 'Lax'  # Prevents CSRF while allowing normal navigation
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 days (adjust as needed)
+
+# CSRF Cookie Security Settings
+CSRF_COOKIE_HTTPONLY = False  # Must be False for JavaScript to read CSRF token
+CSRF_COOKIE_SECURE = not DEBUG  # Only secure in production (HTTPS)
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS if not DEBUG else CORS_ALLOWED_ORIGINS + ['http://localhost:5173', 'http://127.0.0.1:5173']
+
+# Web Push / VAPID Configuration
+# Generate VAPID keys using: python -c "from pywebpush import WebPusher; import json; keys = WebPusher.generate_keys(); print(json.dumps({'public': keys['publicKey'], 'private': keys['privateKey']}, indent=2))"
+# Or use: https://web-push-codelab.glitch.me/
+WEBPUSH_VAPID_PUBLIC_KEY = os.getenv('WEBPUSH_VAPID_PUBLIC_KEY', '')
+WEBPUSH_VAPID_PRIVATE_KEY = os.getenv('WEBPUSH_VAPID_PRIVATE_KEY', '')
+WEBPUSH_VAPID_CLAIMS = {
+    'sub': os.getenv('WEBPUSH_VAPID_SUB', 'mailto:support@secretsanta.example'),
+}
+

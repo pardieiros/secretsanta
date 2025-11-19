@@ -6,7 +6,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
 from django.utils.translation import get_language
-from .models import User, Group, GroupMembership, GroupPermission, SecretSantaAssignment, GiftIdea, Friendship, Message, Notification
+from .models import User, Group, GroupMembership, GroupPermission, SecretSantaAssignment, GiftIdea, Friendship, Message, Notification, PasswordResetToken, CookieConsent, PushSubscription
 from .error_messages import get_error_message
 
 
@@ -282,4 +282,90 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ['id', 'notification_type', 'title', 'message', 'is_read', 'related_user', 'related_group', 'created_at']
         read_only_fields = ['created_at']
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer for password reset request."""
+    email = serializers.EmailField(required=True)
+    
+    def validate_email(self, value):
+        """Validate that email exists."""
+        if not User.objects.filter(email=value).exists():
+            lang = get_language()[:2] if get_language() else 'en'
+            # Don't reveal if email exists for security reasons
+            # Return success message either way
+            pass
+        return value
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    """Serializer for password reset."""
+    token = serializers.CharField(required=True)
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, required=True)
+    
+    def validate(self, attrs):
+        """Validate passwords match and token is valid."""
+        if attrs['password'] != attrs['password2']:
+            lang = get_language()[:2] if get_language() else 'en'
+            raise serializers.ValidationError({
+                'password': get_error_message('validation.password_mismatch', lang)
+            })
+        
+        token = attrs.get('token')
+        try:
+            reset_token = PasswordResetToken.objects.get(token=token)
+            if not reset_token.is_valid():
+                lang = get_language()[:2] if get_language() else 'en'
+                raise serializers.ValidationError({
+                    'token': get_error_message('auth.invalid_reset_token', lang)
+                })
+        except PasswordResetToken.DoesNotExist:
+            lang = get_language()[:2] if get_language() else 'en'
+            raise serializers.ValidationError({
+                'token': get_error_message('auth.invalid_reset_token', lang)
+            })
+        
+        return attrs
+
+
+class CookieConsentSerializer(serializers.ModelSerializer):
+    """Serializer for CookieConsent model."""
+    
+    class Meta:
+        model = CookieConsent
+        fields = [
+            'id', 'necessary', 'functional', 'analytics', 'marketing',
+            'consent_version', 'timestamp'
+        ]
+        read_only_fields = ['id', 'consent_version', 'timestamp']
+
+
+class CookieConsentCreateSerializer(serializers.Serializer):
+    """Serializer for creating cookie consent."""
+    necessary = serializers.BooleanField(default=True)
+    functional = serializers.BooleanField(default=False)
+    analytics = serializers.BooleanField(default=False)
+    marketing = serializers.BooleanField(default=False)
+
+
+class PushSubscriptionSerializer(serializers.ModelSerializer):
+    """Serializer for PushSubscription model."""
+    
+    class Meta:
+        model = PushSubscription
+        fields = ['id', 'endpoint', 'device_type', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class PushSubscriptionCreateSerializer(serializers.Serializer):
+    """Serializer for creating push subscription."""
+    endpoint = serializers.CharField(required=True)
+    keys = serializers.DictField(required=True)
+    
+    def validate_keys(self, value):
+        """Validate that keys contain required fields."""
+        if 'p256dh' not in value or 'auth' not in value:
+            raise serializers.ValidationError("Keys must contain 'p256dh' and 'auth' fields")
+        return value
 

@@ -22,6 +22,8 @@ ERROR_MESSAGES = {
             'login_failed': 'Login failed. Please check your credentials.',
             'token_invalid': 'Invalid or expired token.',
             'unauthorized': 'Authentication required.',
+            'invalid_reset_token': 'Invalid or expired reset token.',
+            'email_already_registered': 'An account with this email already exists. Please login with your password instead.',
         },
         'groups': {
             'not_found': 'Group not found.',
@@ -62,6 +64,8 @@ ERROR_MESSAGES = {
             'login_failed': 'Falha no login. Por favor, verifique as suas credenciais.',
             'token_invalid': 'Token inválido ou expirado.',
             'unauthorized': 'Autenticação necessária.',
+            'invalid_reset_token': 'Token de redefinição inválido ou expirado.',
+            'email_already_registered': 'Já existe uma conta com este email. Por favor, inicie sessão com a sua palavra-passe.',
         },
         'groups': {
             'not_found': 'Grupo não encontrado.',

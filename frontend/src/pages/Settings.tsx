@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'framer-motion'
-import { Save, User, Mail, Phone, Globe } from 'lucide-react'
+import { Save, User, Mail, Phone } from 'lucide-react'
 import { userAPI } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import Avatar from '../components/Avatar'
@@ -12,6 +11,7 @@ import Input from '../components/Input'
 import { useErrorModal } from '../hooks/useErrorModal'
 import ErrorModal from '../components/ErrorModal'
 import { handleApiError } from '../utils/errorHandler'
+import PushNotificationsSettings from '../components/PushNotificationsSettings'
 
 export default function Settings() {
   const { t } = useTranslation()
@@ -161,6 +161,11 @@ export default function Settings() {
             </div>
           </form>
         </Card>
+      </div>
+
+      {/* Push Notifications Settings */}
+      <div className="mt-6">
+        <PushNotificationsSettings />
       </div>
 
       <ErrorModal

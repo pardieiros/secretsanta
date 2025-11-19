@@ -1,4 +1,72 @@
 {
+  "home": {
+    "title": "Organize o Seu Amigo Secreto",
+    "subtitle": "A forma mais fácil e divertida de organizar trocas de presentes",
+    "getStarted": "Começar Agora",
+    "login": "Iniciar Sessão",
+    "features": {
+      "title": "Porquê escolher a nossa aplicação?",
+      "createGroups": {
+        "title": "Crie Grupos Privados ou Públicos",
+        "description": "Organize grupos privados com amigos ou grupos públicos para encontrar novas pessoas. Grupos públicos requerem uma localização para o encontro de troca de presentes."
+      },
+      "addFriends": {
+        "title": "Adicione Amigos",
+        "description": "Construa a sua rede social e adicione amigos para participar em grupos de Amigo Secreto juntos."
+      },
+      "secureMessages": {
+        "title": "Mensagens Seguras",
+        "description": "Comunique-se de forma segura através da aplicação com os seus amigos e membros dos grupos."
+      },
+      "giftIdeas": {
+        "title": "Escolha 5 Presentes",
+        "description": "Cada participante escolhe até 5 presentes que gostaria de receber, facilitando a escolha do presente perfeito."
+      },
+      "adminDraw": {
+        "title": "Sorteio pelo Admin",
+        "description": "O administrador do grupo realiza o sorteio quando todos estiverem prontos, garantindo um processo justo e organizado."
+      },
+      "revealDay": {
+        "title": "Revelação no Dia Certo",
+        "description": "Descubra quem é o seu Amigo Secreto apenas no dia marcado pelo administrador, mantendo a surpresa até ao último momento!"
+      }
+    },
+    "cta": {
+      "title": "Pronto para começar?",
+      "description": "Junte-se a milhares de pessoas que já organizam os seus Amigos Secretos connosco"
+    },
+    "footer": {
+      "rights": "Todos os direitos reservados."
+    }
+  },
+  "passwordReset": {
+    "title": "Recuperar Palavra-passe",
+    "subtitle": "Introduza o seu email e enviaremos um link para redefinir a sua palavra-passe",
+    "email": "Email",
+    "emailPlaceholder": "seu@email.com",
+    "sendLink": "Enviar Link",
+    "sending": "A enviar...",
+    "rememberPassword": "Lembra-se da palavra-passe?",
+    "backToLogin": "Voltar ao Login",
+    "emailSent": "Email Enviado!",
+    "emailSentMessage": "Se existir uma conta com este email, enviámos um link para redefinir a sua palavra-passe. Verifique a sua caixa de entrada.",
+    "resetTitle": "Redefinir Palavra-passe",
+    "resetSubtitle": "Introduza a sua nova palavra-passe",
+    "newPassword": "Nova Palavra-passe",
+    "newPasswordPlaceholder": "••••••••",
+    "confirmPassword": "Confirmar Palavra-passe",
+    "confirmPasswordPlaceholder": "••••••••",
+    "resetPassword": "Redefinir Palavra-passe",
+    "resetting": "A redefinir...",
+    "resetSuccess": "Palavra-passe Redefinida!",
+    "resetSuccessMessage": "A sua palavra-passe foi redefinida com sucesso. Será redirecionado para o login em breve.",
+    "invalidToken": "Token Inválido",
+    "invalidTokenMessage": "O link de redefinição de palavra-passe é inválido ou expirou. Por favor, solicite um novo link.",
+    "requestNewLink": "Solicitar Novo Link",
+    "passwordsDontMatch": "As palavras-passe não coincidem",
+    "requestError": "Erro ao solicitar redefinição de palavra-passe. Por favor, tente novamente.",
+    "resetError": "Erro ao redefinir palavra-passe. Por favor, verifique o token ou solicite um novo link."
+  },
   "login": {
     "title": "Bem-vindo de Volta",
     "subtitle": "Inicie sessão na sua conta",
@@ -13,6 +81,7 @@
     "signUp": "Registe-se",
     "or": "Ou",
     "continueWithGoogle": "Continuar com Google",
+    "forgotPassword": "Esqueceu-se da palavra-passe?",
     "errors": {
       "invalidCredentials": "Email ou palavra-passe inválidos",
       "required": "Este campo é obrigatório",
@@ -48,6 +117,7 @@
   "errors": {
     "authenticationError": "Erro de Autenticação",
     "authFailed": "Não foi possível autenticar com o Google. Por favor, tente novamente.",
+    "emailAlreadyRegistered": "Já existe uma conta com este email. Por favor, inicie sessão com a sua palavra-passe.",
     "processingLogin": "A processar login...",
     "validationFailed": "Validação falhou",
     "fieldRequired": "Este campo é obrigatório",
@@ -301,6 +371,9 @@
     "secretSantaGiftIdeas": "Ideias de Presentes do Meu Amigo Secreto",
     "secretSantaGiftIdeasDescription": "Ideias de presentes de {{name}} (o seu Amigo Secreto):",
     "noSecretSantaGiftIdeas": "O seu Amigo Secreto ainda não adicionou nenhuma ideia de presente.",
+    "viewMySantaIdeas": "Ver Ideias do Meu Amigo Secreto",
+    "mySecretSantaGiftIdeas": "Ideias de Presentes do Meu Amigo Secreto",
+    "mySecretSantaGiftIdeasDescription": "Estas são as ideias de presentes do seu Amigo Secreto. Vai descobrir quem é na data de revelação!",
     "addFriends": "Adicionar Amigos",
     "addFriendsToGroup": "Adicionar Amigos ao Grupo",
     "addFriendsToGroupSubtitle": "Selecione os amigos que deseja adicionar ao grupo",
@@ -309,7 +382,11 @@
     "close": "Fechar",
     "invitationSent": "Convite Enviado!",
     "invitationSentMessage": "O convite foi enviado para {{name}}.",
-    "emailAndNotificationSent": "Um email foi enviado e uma notificação foi criada."
+    "emailAndNotificationSent": "Um email foi enviado e uma notificação foi criada.",
+    "openYourGift": "Abra o Seu Presente!",
+    "clickGiftToReveal": "Clique no presente para revelar o seu Amigo Secreto!",
+    "keepClicking": "Continue a clicar!",
+    "yourSecretSantaIs": "O Seu Amigo Secreto é"
   },
   "giftIdeas": {
     "title": "Ideias de Presentes",
@@ -367,6 +444,159 @@
     "reject": "Rejeitar",
     "rejectConfirm": "Tem a certeza de que deseja rejeitar este convite?",
     "close": "Fechar"
+  },
+  "cookies": {
+    "banner": {
+      "title": "Utilizamos Cookies",
+      "description": "Utilizamos cookies para melhorar a sua experiência, analisar o tráfego do site e personalizar conteúdo. Ao continuar a navegar, concorda com a nossa utilização de cookies.",
+      "learnMore": "Saiba mais",
+      "acceptAll": "Aceitar todos",
+      "rejectNonEssential": "Rejeitar não essenciais",
+      "customize": "Personalizar"
+    },
+    "settings": {
+      "title": "Definições de Cookies",
+      "subtitle": "Gerir as suas preferências de cookies",
+      "close": "Fechar",
+      "cancel": "Cancelar",
+      "savePreferences": "Guardar Preferências",
+      "acceptAll": "Aceitar Todos",
+      "rejectAll": "Rejeitar Todos",
+      "alwaysActive": "Sempre ativo",
+      "toggle": "Alternar",
+      "info": "Para mais informações sobre como utilizamos cookies, consulte a nossa",
+      "policyLink": "Política de Cookies",
+      "necessary": {
+        "title": "Cookies Necessários",
+        "description": "Estes cookies são essenciais para o funcionamento do site e não podem ser desativados. Incluem cookies de sessão e segurança."
+      },
+      "functional": {
+        "title": "Cookies Funcionais",
+        "description": "Estes cookies permitem que o site forneça funcionalidades e personalização melhoradas, como lembrar as suas preferências de idioma."
+      },
+      "analytics": {
+        "title": "Cookies Analíticos",
+        "description": "Estes cookies ajudam-nos a entender como os visitantes interagem com o site, fornecendo informações sobre áreas visitadas, tempo gasto no site e problemas encontrados."
+      },
+      "marketing": {
+        "title": "Cookies de Marketing",
+        "description": "Estes cookies são utilizados para rastrear visitantes em diferentes websites para exibir anúncios relevantes e personalizados."
+      }
+    },
+    "settingsButton": "Definições de Cookies",
+    "policy": {
+      "title": "Política de Cookies",
+      "lastUpdated": "Última atualização",
+      "backToHome": "Voltar ao Início",
+      "whoWeAre": {
+        "title": "Quem Somos",
+        "description": "Somos uma aplicação web dedicada à organização de grupos de Amigo Secreto e à criação de uma rede social em torno desta atividade. A nossa missão é facilitar a organização de trocas de presentes de forma divertida e segura.",
+        "dataController": "Responsável pelo tratamento de dados",
+        "contact": "Secret Santa App"
+      },
+      "whatAreCookies": {
+        "title": "O que são Cookies",
+        "description": "Os cookies são pequenos ficheiros de texto que são colocados no seu dispositivo (computador, tablet ou telemóvel) quando visita um website. Os cookies permitem que o website reconheça o seu dispositivo e armazene algumas informações sobre as suas preferências ou ações passadas.",
+        "types": "Existem diferentes tipos de cookies: cookies de sessão (temporários, eliminados quando fecha o navegador) e cookies persistentes (permanecem no seu dispositivo até expirarem ou serem eliminados)."
+      },
+      "types": {
+        "title": "Tipos de Cookies que Utilizamos",
+        "necessary": {
+          "title": "Cookies Necessários",
+          "description": "Estes cookies são estritamente necessários para o funcionamento do site. Permitem-lhe navegar no site e utilizar funcionalidades essenciais, como áreas seguras e carrinhos de compras. Estes cookies não podem ser desativados."
+        },
+        "functional": {
+          "title": "Cookies Funcionais",
+          "description": "Estes cookies permitem que o site forneça funcionalidades e personalização melhoradas. Podem ser definidos por nós ou por fornecedores externos cujos serviços adicionámos às nossas páginas."
+        },
+        "analytics": {
+          "title": "Cookies Analíticos",
+          "description": "Estes cookies ajudam-nos a entender como os visitantes interagem com o site, fornecendo informações sobre áreas visitadas, tempo gasto no site e problemas encontrados. Esta informação ajuda-nos a melhorar o funcionamento do site."
+        },
+        "marketing": {
+          "title": "Cookies de Marketing",
+          "description": "Estes cookies são utilizados para rastrear visitantes em diferentes websites. O objetivo é exibir anúncios relevantes e envolventes para o utilizador individual e, portanto, mais valiosos para editores e anunciantes terceiros."
+        }
+      },
+      "cookiesWeUse": {
+        "title": "Que Cookies Utilizamos Concretamente"
+      },
+      "table": {
+        "name": "Nome",
+        "purpose": "Finalidade",
+        "type": "Tipo",
+        "duration": "Duração",
+        "firstParty": "Primeira parte",
+        "thirdParty": "Terceiros",
+        "session": "Sessão",
+        "twelveMonths": "12 meses",
+        "twoYears": "2 anos",
+        "oneDay": "1 dia",
+        "sessionid": {
+          "purpose": "Manter a sessão do utilizador autenticado"
+        },
+        "csrftoken": {
+          "purpose": "Proteção contra ataques CSRF (Cross-Site Request Forgery)"
+        },
+        "cookieConsent": {
+          "purpose": "Armazenar as preferências de consentimento de cookies do utilizador"
+        },
+        "analytics": {
+          "purpose": "Recolher informações sobre como os visitantes utilizam o site",
+          "note": "Apenas ativado com o seu consentimento"
+        }
+      },
+      "managePreferences": {
+        "title": "Como Pode Gerir as Suas Preferências",
+        "description": "Pode alterar ou retirar o seu consentimento a qualquer momento utilizando o botão abaixo ou através do link 'Definições de Cookies' disponível no rodapé da aplicação.",
+        "browser": "Também pode gerir cookies diretamente no seu navegador. A maioria dos navegadores permite-lhe recusar ou aceitar cookies, bem como eliminar cookies existentes. Consulte as instruções do seu navegador para mais informações."
+      },
+      "legalBasis": {
+        "title": "Base Legal e RGPD",
+        "description": "Os cookies estritamente necessários são utilizados com base no nosso interesse legítimo de garantir o funcionamento seguro e eficiente do site. Os restantes cookies (funcionais, analíticos e de marketing) são utilizados apenas com o seu consentimento explícito, nos termos do Regulamento Geral sobre a Proteção de Dados (RGPD) e da Diretiva ePrivacy.",
+        "withdraw": "Tem o direito de retirar o seu consentimento a qualquer momento, sem afetar a licitude do tratamento baseado no consentimento antes da sua retirada."
+      },
+      "rights": {
+        "title": "Direitos do Titular dos Dados",
+        "description": "Nos termos do RGPD, tem os seguintes direitos:",
+        "access": "Direito de acesso - pode solicitar informações sobre os dados pessoais que tratamos",
+        "rectification": "Direito de retificação - pode solicitar a correção de dados incorretos",
+        "erasure": "Direito ao apagamento - pode solicitar a eliminação dos seus dados pessoais",
+        "limit": "Direito à limitação do tratamento - pode solicitar a limitação do tratamento dos seus dados",
+        "oppose": "Direito de oposição - pode opor-se ao tratamento dos seus dados pessoais",
+        "portability": "Direito à portabilidade - pode solicitar a transferência dos seus dados para outro responsável pelo tratamento",
+        "contact": "Para exercer estes direitos, contacte-nos em"
+      },
+      "updates": {
+        "title": "Atualizações desta Política",
+        "description": "Podemos atualizar esta Política de Cookies periodicamente para refletir alterações nas nossas práticas ou por outras razões operacionais, legais ou regulamentares. Recomendamos que reveja esta página regularmente para se manter informado sobre a nossa utilização de cookies."
+      }
+    }
+  },
+  "pushNotifications": {
+    "title": "Notificações Push",
+    "description": "Receba notificações no seu navegador mesmo quando a aplicação estiver fechada. Será notificado sobre novos grupos, mensagens e atualizações importantes.",
+    "status": {
+      "enabled": "Ativadas",
+      "disabled": "Desativadas",
+      "blocked": "Bloqueadas",
+      "unsupported": "Não Suportadas",
+      "enabledDescription": "As notificações push estão ativadas. Receberá notificações sobre grupos e mensagens.",
+      "disabledDescription": "As notificações push estão desativadas. Clique em 'Ativar notificações' para começar a receber notificações.",
+      "blockedDescription": "As notificações estão bloqueadas nas definições do navegador. Precisa de as ativar manualmente.",
+      "unsupportedDescription": "O seu navegador não suporta notificações push."
+    },
+    "activate": "Ativar Notificações",
+    "deactivate": "Desativar Notificações",
+    "activating": "A ativar...",
+    "deactivating": "A desativar...",
+    "test": "Testar Notificação",
+    "error": "Erro",
+    "blockedInstructions": "Para ativar as notificações:",
+    "blockedStep1": "Abra as definições do navegador",
+    "blockedStep2": "Procure por 'Notificações' ou 'Permissões'",
+    "blockedStep3": "Permita notificações para este site e recarregue a página",
+    "info": "As notificações são enviadas mesmo quando a aplicação está fechada. Pode desativá-las a qualquer momento."
   }
 }
 

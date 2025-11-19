@@ -92,7 +92,7 @@ export default function GoogleCallback() {
       } else {
         handleApiError(error, showError);
       }
-      // Don't auto-redirect, let user see the error
+      // Don't auto-redirect, let user see the error (unless email already exists)
     } finally {
       setLoading(false);
     }
