@@ -15,11 +15,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Collect static files (for production)
-# RUN python manage.py collectstatic --noinput
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose port
 EXPOSE 8000
+
+# Use entrypoint to run migrations and collectstatic before starting server
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Default command (can be overridden in docker-compose)
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
