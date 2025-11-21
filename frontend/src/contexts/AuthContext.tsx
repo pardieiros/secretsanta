@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { authAPI, userAPI } from '../lib/api'
+import { updatePusherAuth } from '../lib/pusher'
 
 interface User {
   id: number
@@ -80,6 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
     }
+    // Update Pusher auth headers
+    updatePusherAuth()
   }
   
   const clearTokens = () => {

@@ -7,16 +7,82 @@ import Avatar from '../components/Avatar'
 import Card from '../components/Card'
 import Button from '../components/Button'
 import { format } from 'date-fns'
+import { useChannel } from '../hooks/useChannel'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Notifications() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { user } = useAuth()
 
   // Get notifications
   const { data: notificationsData, isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationAPI.list(),
+    refetchInterval: false, // Disable polling, use WebSockets instead
   })
+
+  // Listen for new notifications via WebSocket
+  useChannel(
+    user ? `private-user-${user.id}` : '',
+    'new-notification',
+    (data: any) => {
+      queryClient.setQueryData(['notifications'], (oldData: any) => {
+        if (!oldData) return oldData
+        
+        const notifications = oldData.results || oldData || []
+        // Check if notification already exists
+        const exists = notifications.some((n: any) => n.id === data.id)
+        if (exists) return oldData
+        
+        // Add new notification at the beginning
+        return {
+          ...oldData,
+          results: [data, ...notifications],
+          count: (oldData.count || notifications.length) + 1,
+        }
+      })
+      // Invalidate unread count
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+    }
+  )
+
+  // Listen for other notification events
+  useChannel(
+    user ? `private-user-${user.id}` : '',
+    'new-friend-request',
+    (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+    }
+  )
+
+  useChannel(
+    user ? `private-user-${user.id}` : '',
+    'friend-accepted',
+    (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+    }
+  )
+
+  useChannel(
+    user ? `private-user-${user.id}` : '',
+    'new-group-invite',
+    (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+    }
+  )
+
+  useChannel(
+    user ? `private-user-${user.id}` : '',
+    'group-draw-update',
+    (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+    }
+  )
 
   // Handle paginated response
   const notifications = notificationsData?.results || notificationsData || []

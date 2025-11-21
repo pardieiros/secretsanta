@@ -12,6 +12,7 @@ import logo from '../assets/img/logo_128.png'
 import CookieBanner from '../features/cookies/CookieBanner'
 import CookieSettingsModal from '../features/cookies/CookieSettingsModal'
 import CookieSettingsButton from '../features/cookies/CookieSettingsButton'
+import { useChannel } from '../hooks/useChannel'
 
 export default function Layout() {
   const { t, i18n } = useTranslation()
@@ -42,21 +43,21 @@ export default function Layout() {
   const { data: notificationsData } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationAPI.list(),
-    refetchInterval: 10000, // Poll every 10 seconds
+    refetchInterval: false, // Disable polling, use WebSockets instead
   })
 
   // Get unread count
   const { data: unreadData } = useQuery({
     queryKey: ['notifications', 'unread'],
     queryFn: () => notificationAPI.getUnreadCount(),
-    refetchInterval: 10000,
+    refetchInterval: false, // Disable polling, use WebSockets instead
   })
 
   // Get conversations for messages dropdown
   const { data: conversationsData } = useQuery({
     queryKey: ['messages', 'conversations'],
     queryFn: () => messageAPI.getConversations(),
-    refetchInterval: 10000,
+    refetchInterval: false, // Disable polling, use WebSockets instead
   })
 
   // Handle paginated response
@@ -68,6 +69,62 @@ export default function Layout() {
   const unreadMessagesCount = conversations.reduce((total: number, conv: any) => {
     return total + (conv.unread_count || 0)
   }, 0)
+
+  // Listen for new notifications via WebSocket
+  useChannel(
+    user ? `private-user-${user.id}` : '',
+    'new-notification',
+    () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+    }
+  )
+
+  // Listen for new messages via WebSocket
+  useChannel(
+    user ? `private-user-${user.id}` : '',
+    'new-message',
+    () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', 'conversations'] })
+    }
+  )
+
+  // Listen for other notification events
+  useChannel(
+    user ? `private-user-${user.id}` : '',
+    'new-friend-request',
+    () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+    }
+  )
+
+  useChannel(
+    user ? `private-user-${user.id}` : '',
+    'friend-accepted',
+    () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+    }
+  )
+
+  useChannel(
+    user ? `private-user-${user.id}` : '',
+    'new-group-invite',
+    () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+    }
+  )
+
+  useChannel(
+    user ? `private-user-${user.id}` : '',
+    'group-draw-update',
+    () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+    }
+  )
 
   // Mark as read
   const markReadMutation = useMutation({

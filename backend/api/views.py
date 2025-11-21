@@ -1402,6 +1402,26 @@ class MessageViewSet(viewsets.ModelViewSet):
         
         message = serializer.save(sender=self.request.user, receiver=receiver)
         
+        # Send WebSocket event for new message
+        try:
+            from .utils.pusher_client import pusher_client
+            if pusher_client:
+                message_data = {
+                    'id': message.id,
+                    'sender_id': message.sender.id,
+                    'receiver_id': message.receiver.id,
+                    'content': message.content,
+                    'created_at': message.created_at.isoformat(),
+                    'sender_name': self.request.user.first_name or self.request.user.email,
+                }
+                # Send to receiver's channel
+                channel_name = f"private-user-{receiver.id}"
+                pusher_client.trigger(channel_name, "new-message", message_data)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send WebSocket event for message: {str(e)}")
+        
         # Create notification for the message
         try:
             sender_name = self.request.user.first_name or self.request.user.email
@@ -1412,7 +1432,7 @@ class MessageViewSet(viewsets.ModelViewSet):
                 message=message.content[:200],  # First 200 characters
                 related_user=self.request.user
             )
-            # Send push notification
+            # Send push notification (this will also send WebSocket event)
             from .push_notifications import send_notification_push
             send_notification_push(notification)
         except Exception as e:
@@ -1746,6 +1766,64 @@ class PushTestView(APIView):
                 'results': results,
             })
         except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PusherAuthView(APIView):
+    """
+    View to authenticate Pusher/Soketi private channels.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Authenticate Pusher channel subscription."""
+        from .utils.pusher_client import pusher_client
+        import json
+        
+        if not pusher_client:
+            return Response(
+                {'error': 'Pusher client not configured'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        try:
+            body = json.loads(request.body) if isinstance(request.body, bytes) else request.data
+            socket_id = body.get("socket_id")
+            channel = body.get("channel_name")
+            
+            if not socket_id or not channel:
+                return Response(
+                    {'error': 'socket_id and channel_name are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Only allow private channels for the authenticated user
+            if channel.startswith("private-user-"):
+                user_id = channel.replace("private-user-", "")
+                if str(request.user.id) != user_id:
+                    return Response(
+                        {'error': 'Unauthorized channel access'},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            
+            auth = pusher_client.authenticate(
+                channel=channel,
+                socket_id=socket_id
+            )
+            return Response(auth)
+        except json.JSONDecodeError:
+            return Response(
+                {'error': 'Invalid JSON'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Pusher auth error: {str(e)}")
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

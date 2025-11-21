@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query'
 import Avatar from '../../Avatar'
 import Card from '../../Card'
 import { format } from 'date-fns'
+import { useChannel } from '../../../hooks/useChannel'
 
 interface User {
   id: number
@@ -82,8 +83,50 @@ export default function ChatArea({
       return undefined
     },
     initialPageParam: 1,
-    refetchInterval: 3000, // Poll every 3 seconds for new messages
+    refetchInterval: false, // Disable polling, use WebSockets instead
   })
+
+  // Listen for new messages via WebSocket
+  useChannel(
+    currentUser ? `private-user-${currentUser.id}` : '',
+    'new-message',
+    useCallback((data: any) => {
+      // Only add message if it's for the current conversation
+      if (data.receiver_id === currentUser?.id && data.sender_id === selectedUserId) {
+        queryClient.setQueryData(['messages', selectedUserId], (oldData: any) => {
+          if (!oldData) return oldData
+          
+          // Check if message already exists
+          const allMessages = oldData.pages.flatMap((page: any) => page.results || page || [])
+          const messageExists = allMessages.some((m: any) => m.id === data.id)
+          
+          if (messageExists) return oldData
+          
+          // Add new message to the first page
+          const newPages = [...oldData.pages]
+          if (newPages[0]?.results) {
+            newPages[0] = {
+              ...newPages[0],
+              results: [data, ...newPages[0].results],
+            }
+          } else {
+            newPages[0] = {
+              results: [data],
+              count: (newPages[0]?.count || 0) + 1,
+            }
+          }
+          
+          return {
+            ...oldData,
+            pages: newPages,
+          }
+        })
+        setShouldScrollToBottom(true)
+        // Invalidate conversations to update unread count
+        queryClient.invalidateQueries({ queryKey: ['messages', 'conversations'] })
+      }
+    }, [currentUser?.id, selectedUserId, queryClient])
+  )
 
   // Flatten all messages from all pages
   // Django returns newest first, so we need to reverse to show oldest first in UI

@@ -20,7 +20,7 @@ export default function Messages() {
   const { data: conversationsData, isLoading: isLoadingConversations } = useQuery({
     queryKey: ['messages', 'conversations'],
     queryFn: () => messageAPI.getConversations(),
-    refetchInterval: 5000, // Poll every 5 seconds for new conversations
+    refetchInterval: false, // Disable polling, use WebSockets instead
   })
 
   // Handle paginated response

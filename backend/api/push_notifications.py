@@ -196,6 +196,7 @@ def send_notification_push(notification):
     """
     Send a push notification when a Notification object is created.
     This function should be called after creating a Notification.
+    Sends both Web Push notifications and WebSocket events via Pusher/Soketi.
     
     Args:
         notification: Notification model instance
@@ -249,9 +250,54 @@ def send_notification_push(notification):
             payload['data'] = {}
         payload['data']['user_id'] = notification.related_user.id
     
+    # Send Web Push notification
+    web_push_results = []
     try:
-        return send_web_push_to_user(notification.user, payload)
+        web_push_results = send_web_push_to_user(notification.user, payload)
     except Exception as e:
-        logger.error(f"Error sending push notification for notification {notification.id}: {str(e)}")
-        return []
+        logger.error(f"Error sending web push notification for notification {notification.id}: {str(e)}")
+    
+    # Send WebSocket event via Pusher/Soketi
+    try:
+        from .utils.pusher_client import pusher_client
+        
+        if pusher_client:
+            # Prepare WebSocket event data
+            ws_data = {
+                'id': notification.id,
+                'type': notification.notification_type,
+                'title': notification.title,
+                'message': notification.message,
+                'is_read': notification.is_read,
+                'created_at': notification.created_at.isoformat(),
+                'url': url,
+            }
+            
+            # Add related data
+            if notification.related_group:
+                ws_data['related_group_id'] = notification.related_group.id
+            if notification.related_user:
+                ws_data['related_user_id'] = notification.related_user.id
+            
+            # Determine event name based on notification type
+            event_map = {
+                'friend_request': 'new-friend-request',
+                'friend_accepted': 'friend-accepted',
+                'message': 'new-message',
+                'group_invite': 'new-group-invite',
+                'group_draw': 'group-draw-update',
+                'system': 'new-notification',
+            }
+            event_name = event_map.get(notification.notification_type, 'new-notification')
+            
+            # Send to user's private channel
+            channel_name = f"private-user-{notification.user.id}"
+            pusher_client.trigger(channel_name, event_name, ws_data)
+            logger.info(f"Sent WebSocket event {event_name} to channel {channel_name} for notification {notification.id}")
+        else:
+            logger.warning("Pusher client not available, skipping WebSocket notification")
+    except Exception as e:
+        logger.error(f"Error sending WebSocket notification for notification {notification.id}: {str(e)}")
+    
+    return web_push_results
 

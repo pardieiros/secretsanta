@@ -7,7 +7,8 @@ from .views import (
     RegisterView, GoogleOAuthView, PasswordResetRequestView, PasswordResetView,
     UserViewSet, GroupViewSet, GiftIdeaViewSet,
     FriendshipViewSet, MessageViewSet, NotificationViewSet, CookieConsentView,
-    PushVapidPublicKeyView, PushSubscribeView, PushUnsubscribeView, PushTestView
+    PushVapidPublicKeyView, PushSubscribeView, PushUnsubscribeView, PushTestView,
+    PusherAuthView
 )
 
 router = DefaultRouter()
@@ -28,6 +29,7 @@ urlpatterns = [
     path('push/subscribe/', PushSubscribeView.as_view(), name='push_subscribe'),
     path('push/unsubscribe/', PushUnsubscribeView.as_view(), name='push_unsubscribe'),
     path('push/test/', PushTestView.as_view(), name='push_test'),
+    path('pusher/auth/', PusherAuthView.as_view(), name='pusher_auth'),
     path('', include(router.urls)),
 ]
 
