@@ -1,5 +1,5 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -23,7 +23,20 @@ export default function Layout() {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showMessages, setShowMessages] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
   const queryClient = useQueryClient()
+
+  // Detect desktop viewport
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768)
+    }
+    
+    checkDesktop()
+    window.addEventListener('resize', checkDesktop)
+    
+    return () => window.removeEventListener('resize', checkDesktop)
+  }, [])
 
   // Get notifications
   const { data: notificationsData } = useQuery({
@@ -121,7 +134,7 @@ export default function Layout() {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="bg-secondary text-text-on-light shadow-lg sticky top-0 z-40">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
@@ -183,7 +196,7 @@ export default function Layout() {
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="fixed inset-0 md:absolute md:right-0 md:top-auto md:mt-2 md:w-96 md:max-h-[calc(100vh-8rem)] md:rounded-lg md:shadow-xl md:border md:border-border-soft bg-background z-50 flex flex-col"
+                          className="fixed inset-0 md:absolute md:right-0 md:top-full md:mt-2 md:w-96 md:max-h-[calc(100vh-8rem)] md:rounded-lg md:shadow-xl md:border md:border-border-soft bg-background z-50 flex flex-col"
                         >
                           {/* Header */}
                           <div className="p-4 border-b border-border-soft flex items-center justify-between">
@@ -215,7 +228,8 @@ export default function Layout() {
                               </div>
                             ) : (
                               <div className="divide-y divide-border-soft">
-                                {conversations.slice(0, 10).map((conversation: any) => (
+                                {/* Show all on mobile, only 5 on desktop */}
+                                {(isDesktop ? conversations.slice(0, 5) : conversations).map((conversation: any) => (
                                   <Link
                                     key={conversation.user.id}
                                     to="/messages"
@@ -264,16 +278,18 @@ export default function Layout() {
                             )}
                           </div>
 
-                          {/* Footer */}
+                          {/* Footer - Show "View All" button only on desktop if there are more than 5 conversations */}
                           {conversations.length > 0 && (
-                            <div className="p-3 border-t border-border-soft">
-                              <Link
-                                to="/messages"
-                                onClick={() => setShowMessages(false)}
-                                className="block text-center text-sm text-primary hover:underline"
-                              >
-                                {t('messages.viewAll')}
-                              </Link>
+                            <div className="p-3 border-t border-border-soft hidden md:block">
+                              {conversations.length > 5 && (
+                                <Link
+                                  to="/messages"
+                                  onClick={() => setShowMessages(false)}
+                                  className="block text-center text-sm text-primary hover:underline"
+                                >
+                                  {t('messages.viewAll')}
+                                </Link>
+                              )}
                             </div>
                           )}
                         </motion.div>
@@ -308,7 +324,7 @@ export default function Layout() {
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="fixed inset-0 md:absolute md:right-0 md:top-auto md:mt-2 md:w-96 md:max-h-[calc(100vh-8rem)] md:rounded-lg md:shadow-xl md:border md:border-border-soft bg-background z-50 flex flex-col"
+                          className="fixed inset-0 md:absolute md:right-0 md:top-full md:mt-2 md:w-96 md:max-h-[calc(100vh-8rem)] md:rounded-lg md:shadow-xl md:border md:border-border-soft bg-background z-50 flex flex-col"
                         >
                           {/* Header */}
                           <div className="p-4 border-b border-border-soft flex items-center justify-between">
@@ -343,7 +359,8 @@ export default function Layout() {
                               </div>
                             ) : (
                               <div className="divide-y divide-border-soft">
-                                {notifications.slice(0, 10).map((notification: any) => {
+                                {/* Show all on mobile, only 5 on desktop */}
+                                {(isDesktop ? notifications.slice(0, 5) : notifications).map((notification: any) => {
                                   const isGroupInvite = notification.notification_type === 'group_invite'
                                   const isFriendRequest = notification.notification_type === 'friend_request'
                                   
@@ -410,26 +427,28 @@ export default function Layout() {
                                   
                                   if (isGroupInvite) {
                                     return (
-                                      <Link
-                                        key={notification.id}
-                                        to="/groups/invites"
-                                        onClick={handleNotificationClick}
-                                      >
-                                        {content}
-                                      </Link>
+                                      <div key={notification.id}>
+                                        <Link
+                                          to="/groups/invites"
+                                          onClick={handleNotificationClick}
+                                        >
+                                          {content}
+                                        </Link>
+                                      </div>
                                     )
                                   }
                                   
                                   if (isFriendRequest) {
                                     return (
-                                      <Link
-                                        key={notification.id}
-                                        to="/social"
-                                        state={{ activeTab: 'requests' }}
-                                        onClick={handleNotificationClick}
-                                      >
-                                        {content}
-                                      </Link>
+                                      <div key={notification.id}>
+                                        <Link
+                                          to="/social"
+                                          state={{ activeTab: 'requests' }}
+                                          onClick={handleNotificationClick}
+                                        >
+                                          {content}
+                                        </Link>
+                                      </div>
                                     )
                                   }
                                   
@@ -443,16 +462,18 @@ export default function Layout() {
                             )}
                           </div>
 
-                          {/* Footer */}
+                          {/* Footer - Show "View All" button only on desktop if there are more than 5 notifications */}
                           {notifications.length > 0 && (
-                            <div className="p-3 border-t border-border-soft">
-                              <Link
-                                to="/notifications"
-                                onClick={() => setShowNotifications(false)}
-                                className="block text-center text-sm text-primary hover:underline"
-                              >
-                                {t('notifications.viewAll')}
-                              </Link>
+                            <div className="p-3 border-t border-border-soft hidden md:block">
+                              {notifications.length > 5 && (
+                                <Link
+                                  to="/notifications"
+                                  onClick={() => setShowNotifications(false)}
+                                  className="block text-center text-sm text-primary hover:underline"
+                                >
+                                  {t('notifications.viewAll')}
+                                </Link>
+                              )}
                             </div>
                           )}
                         </motion.div>
@@ -485,7 +506,7 @@ export default function Layout() {
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="absolute right-0 mt-2 w-auto min-w-[10rem] max-w-[20rem] bg-background rounded-lg shadow-xl border border-border-soft py-2 z-20"
+                          className="absolute right-0 top-full mt-2 w-auto min-w-[10rem] max-w-[20rem] bg-background rounded-lg shadow-xl border border-border-soft py-2 z-20"
                         >
                           {languages.map((lang) => (
                             <button
@@ -537,7 +558,7 @@ export default function Layout() {
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="absolute right-0 mt-2 w-auto min-w-[12rem] max-w-[20rem] bg-background rounded-lg shadow-xl border border-border-soft py-2 z-20"
+                          className="absolute right-0 top-full mt-2 w-auto min-w-[12rem] max-w-[20rem] bg-background rounded-lg shadow-xl border border-border-soft py-2 z-20"
                         >
                           <Link
                             to="/settings"
@@ -600,7 +621,7 @@ export default function Layout() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-0 sm:px-4 py-4 sm:py-8">
+      <main className="flex-1 container mx-auto px-0 sm:px-4 py-4 sm:py-8">
         <Outlet />
       </main>
 

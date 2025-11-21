@@ -138,7 +138,8 @@
     "language": "Language",
     "portuguese": "Portuguese",
     "english": "English",
-    "close": "Close"
+    "close": "Close",
+    "back": "Back"
   },
   "social": {
     "title": "Social",
@@ -150,7 +151,10 @@
     "noResults": "No users found",
     "noFriends": "You don't have any friends yet. Start searching!",
     "noRequests": "No pending friend requests",
-    "inviteByEmail": "Invite by Email"
+    "inviteByEmail": "Invite by Email",
+    "addFriend": "Add Friend",
+    "acceptRequest": "Accept Request",
+    "accepting": "Accepting..."
   },
   "addFriend": {
     "title": "Add Friend",
@@ -183,6 +187,11 @@
     "title": "Settings",
     "subtitle": "Manage your account settings",
     "changePhoto": "Change Photo",
+    "photoChanged": "Photo Selected",
+    "photoWillUpdate": "Photo will update when you save",
+    "error": "Error",
+    "invalidImageType": "Please select a valid image file",
+    "imageTooLarge": "Image is too large. Maximum size is 5MB",
     "firstName": "First Name",
     "lastName": "Last Name",
     "firstNamePlaceholder": "Your first name",
@@ -597,6 +606,13 @@
     "blockedStep2": "Look for 'Notifications' or 'Permissions'",
     "blockedStep3": "Allow notifications for this site and reload the page",
     "info": "Notifications are sent even when the app is closed. You can disable them at any time."
+  },
+  "pushNotificationPrompt": {
+    "title": "Receive Notifications?",
+    "message": "Would you like to receive push notifications to be notified about new groups, messages, and important updates?",
+    "yes": "Yes, enable",
+    "no": "No, thanks",
+    "activating": "Enabling..."
   }
 }
 

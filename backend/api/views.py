@@ -66,13 +66,16 @@ class RegisterView(APIView):
                     invite.save()
                     
                     # Create notification
-                    Notification.objects.create(
+                    notification = Notification.objects.create(
                         user=user,
                         notification_type='friend_request',
                         title='New Friend Request',
                         message=f"{invite.requester.first_name or invite.requester.email} sent you a friend request",
                         related_user=invite.requester
                     )
+                    # Send push notification
+                    from .push_notifications import send_notification_push
+                    send_notification_push(notification)
                 
                 return Response({
                     'message': 'User registered successfully',
@@ -216,13 +219,16 @@ class GoogleOAuthView(APIView):
                 invite.save()
                 
                 # Create notification
-                Notification.objects.create(
+                notification = Notification.objects.create(
                     user=user,
                     notification_type='friend_request',
                     title='New Friend Request',
                     message=f"{invite.requester.first_name or invite.requester.email} sent you a friend request",
                     related_user=invite.requester
                 )
+                # Send push notification
+                from .push_notifications import send_notification_push
+                send_notification_push(notification)
             
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
@@ -383,6 +389,27 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({
                 'user': UserSerializer(request.user).data,
                 'profile_complete': request.user.check_profile_complete(),
+            }, status=status.HTTP_200_OK)
+        return Response({
+            'error': get_error_message('validation.validation_failed', lang),
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['patch'])
+    def update_push_notification_preference(self, request):
+        """Update push notification preference (mark as asked)."""
+        from .serializers import PushNotificationPreferenceSerializer
+        
+        lang = request.headers.get('Accept-Language', 'en')[:2] or 'en'
+        if lang not in ['en', 'pt']:
+            lang = 'en'
+        activate(lang)
+        
+        serializer = PushNotificationPreferenceSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'user': UserSerializer(request.user).data,
             }, status=status.HTTP_200_OK)
         return Response({
             'error': get_error_message('validation.validation_failed', lang),
@@ -710,21 +737,28 @@ class GroupViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Mark as drawn immediately (before starting the draw process)
-        # This allows the frontend to update immediately
-        now = timezone.now()
-        group.is_drawn = True
-        group.draw_completed_at = now
-        group.save()
+        # Execute draw synchronously to ensure assignments are created
+        # This ensures assignments are created immediately
+        from .tasks import execute_draw_task
+        result = execute_draw_task(group.id)
         
-        # Dispatch Celery task to execute draw (assignments will be created in background)
-        task = execute_draw_task.delay(group.id)
+        if result.get('error'):
+            # If error occurred, revert is_drawn flag
+            group.is_drawn = False
+            group.draw_completed_at = None
+            group.save()
+            return Response(
+                {'error': result['error']},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        # Refresh group to get updated data
+        group.refresh_from_db()
         
         return Response({
-            'message': 'Draw is being processed',
-            'task_id': task.id,
-            'is_drawn': True,
-            'draw_completed_at': now
+            'message': result.get('message', 'Draw completed successfully'),
+            'is_drawn': group.is_drawn,
+            'draw_completed_at': group.draw_completed_at
         }, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['get'])
@@ -1159,13 +1193,16 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         serializer.save(requester=self.request.user, addressee=addressee, status='pending')
         
         # Create notification
-        Notification.objects.create(
+        notification = Notification.objects.create(
             user=addressee,
             notification_type='friend_request',
             title='New Friend Request',
             message=f"{self.request.user.first_name or self.request.user.email} sent you a friend request",
             related_user=self.request.user
         )
+        # Send push notification
+        from .push_notifications import send_notification_push
+        send_notification_push(notification)
     
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
@@ -1181,13 +1218,16 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         friendship.save()
         
         # Create notification
-        Notification.objects.create(
+        notification = Notification.objects.create(
             user=friendship.requester,
             notification_type='friend_accepted',
             title='Friend Request Accepted',
             message=f"{request.user.first_name or request.user.email} accepted your friend request",
             related_user=request.user
         )
+        # Send push notification
+        from .push_notifications import send_notification_push
+        send_notification_push(notification)
         
         serializer = self.get_serializer(friendship)
         return Response(serializer.data)
@@ -1277,13 +1317,16 @@ class FriendshipViewSet(viewsets.ModelViewSet):
             )
             
             # Create notification
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 user=existing_user,
                 notification_type='friend_request',
                 title='New Friend Request',
                 message=f"{request.user.first_name or request.user.email} sent you a friend request",
                 related_user=request.user
             )
+            # Send push notification
+            from .push_notifications import send_notification_push
+            send_notification_push(notification)
             
             return Response({
                 'message': 'Friend request sent',
@@ -1359,16 +1402,24 @@ class MessageViewSet(viewsets.ModelViewSet):
         
         message = serializer.save(sender=self.request.user, receiver=receiver)
         
-        # Send push notification to the receiver
-        # Uncomment to enable push notifications for new messages
-        # from .push_notifications import send_message_notification
-        # sender_name = self.request.user.get_full_name() or self.request.user.email
-        # message_preview = message.content[:100]  # First 100 characters
-        # send_message_notification(
-        #     user=receiver,
-        #     sender_name=sender_name,
-        #     message_preview=message_preview
-        # )
+        # Create notification for the message
+        try:
+            sender_name = self.request.user.first_name or self.request.user.email
+            notification = Notification.objects.create(
+                user=receiver,
+                notification_type='message',
+                title=f'New message from {sender_name}',
+                message=message.content[:200],  # First 200 characters
+                related_user=self.request.user
+            )
+            # Send push notification
+            from .push_notifications import send_notification_push
+            send_notification_push(notification)
+        except Exception as e:
+            # Log error but don't fail message creation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to create notification for message: {str(e)}")
     
     @action(detail=False, methods=['get'])
     def conversations(self, request):

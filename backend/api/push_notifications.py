@@ -191,3 +191,67 @@ def send_draw_completed_notification(user: User, group_name: str):
     }
     return send_web_push_to_user(user, payload)
 
+
+def send_notification_push(notification):
+    """
+    Send a push notification when a Notification object is created.
+    This function should be called after creating a Notification.
+    
+    Args:
+        notification: Notification model instance
+    """
+    from .models import Notification
+    
+    if not isinstance(notification, Notification):
+        logger.error(f"Invalid notification object: {notification}")
+        return []
+    
+    # Determine URL based on notification type
+    url_map = {
+        'friend_request': '/social',
+        'friend_accepted': '/social',
+        'message': '/messages',
+        'group_invite': '/notifications',
+        'group_draw': '/notifications',
+        'system': '/notifications',
+    }
+    
+    # Determine tag based on notification type
+    tag_map = {
+        'friend_request': 'friend-request',
+        'friend_accepted': 'friend-accepted',
+        'message': 'message',
+        'group_invite': 'group-invite',
+        'group_draw': 'group-draw',
+        'system': 'system',
+    }
+    
+    url = url_map.get(notification.notification_type, '/notifications')
+    tag = tag_map.get(notification.notification_type, 'notification')
+    
+    # Build payload
+    payload = {
+        'title': notification.title,
+        'body': notification.message,
+        'url': url,
+        'tag': tag,
+    }
+    
+    # Add group ID to data if related_group exists
+    if notification.related_group:
+        payload['data'] = {
+            'group_id': notification.related_group.id,
+        }
+    
+    # Add user ID to data if related_user exists
+    if notification.related_user:
+        if 'data' not in payload:
+            payload['data'] = {}
+        payload['data']['user_id'] = notification.related_user.id
+    
+    try:
+        return send_web_push_to_user(notification.user, payload)
+    except Exception as e:
+        logger.error(f"Error sending push notification for notification {notification.id}: {str(e)}")
+        return []
+

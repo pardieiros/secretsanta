@@ -9,6 +9,7 @@ interface User {
   last_name: string
   profile_picture?: string | null
   phone?: string | null
+  push_notifications_asked?: boolean
 }
 
 interface AuthContextType {

@@ -43,12 +43,32 @@ export default function Settings() {
     updateProfileMutation.mutate(formData)
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showError({
+          title: t('settings.error'),
+          message: t('settings.invalidImageType'),
+        })
+        return
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showError({
+          title: t('settings.error'),
+          message: t('settings.imageTooLarge'),
+        })
+        return
+      }
+
+      // Convert to base64 data URL for preview
       const reader = new FileReader()
       reader.onloadend = () => {
-        setFormData({ ...formData, profile_picture: reader.result as string })
+        const base64Image = reader.result as string
+        setFormData({ ...formData, profile_picture: base64Image })
       }
       reader.readAsDataURL(file)
     }
@@ -74,22 +94,33 @@ export default function Settings() {
           <div className="text-center">
             <div className="flex justify-center mb-4">
               <Avatar
-                src={formData.profile_picture}
+                src={formData.profile_picture || user?.profile_picture}
                 name={getUserName()}
                 size="xl"
               />
             </div>
-            <label className="inline-block">
+            <label className="inline-block w-full cursor-pointer">
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
                 className="hidden"
+                id="profile-picture-input"
               />
-              <Button variant="secondary" className="w-full">
-                {t('settings.changePhoto')}
+              <Button 
+                type="button"
+                variant="secondary" 
+                className="w-full"
+                onClick={() => document.getElementById('profile-picture-input')?.click()}
+              >
+                {formData.profile_picture ? t('settings.photoChanged') : t('settings.changePhoto')}
               </Button>
             </label>
+            {formData.profile_picture && formData.profile_picture !== user?.profile_picture && (
+              <p className="text-xs text-text-secondary mt-2">
+                {t('settings.photoWillUpdate')}
+              </p>
+            )}
           </div>
         </Card>
 

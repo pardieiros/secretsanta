@@ -132,3 +132,6 @@ export default function AddFriendModal({ isOpen, onClose }: AddFriendModalProps)
   )
 }
 
+
+
+

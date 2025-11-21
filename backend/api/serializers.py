@@ -79,7 +79,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'phone', 'profile_picture', 'profile_complete']
+        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'phone', 'profile_picture', 'profile_complete', 'push_notifications_asked']
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
@@ -96,6 +96,13 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
             if not attrs.get('last_name') and not self.instance.last_name:
                 raise serializers.ValidationError({'last_name': 'Last name is required to complete profile.'})
         return attrs
+
+
+class PushNotificationPreferenceSerializer(serializers.ModelSerializer):
+    """Serializer for updating push notification preference."""
+    class Meta:
+        model = User
+        fields = ['push_notifications_asked']
 
 
 class GroupSerializer(serializers.ModelSerializer):

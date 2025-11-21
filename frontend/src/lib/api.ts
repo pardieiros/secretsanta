@@ -95,6 +95,11 @@ export const userAPI = {
     const response = await api.patch('/users/update_profile/', data)
     return response.data
   },
+  
+  updatePushNotificationPreference: async (data: { push_notifications_asked: boolean }) => {
+    const response = await api.patch('/users/update_push_notification_preference/', data)
+    return response.data
+  },
 }
 
 // Group API
@@ -275,8 +280,11 @@ export const friendshipAPI = {
 
 // Message API
 export const messageAPI = {
-  list: async (userId?: number) => {
-    const params = userId ? { user: userId } : {}
+  list: async (userId?: number, page?: number) => {
+    const params: any = userId ? { user: userId } : {}
+    if (page) {
+      params.page = page
+    }
     const response = await api.get('/messages/', { params })
     return response.data
   },

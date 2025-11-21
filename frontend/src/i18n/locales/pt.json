@@ -138,7 +138,8 @@
     "language": "Idioma",
     "portuguese": "Português",
     "english": "Inglês",
-    "close": "Fechar"
+    "close": "Fechar",
+    "back": "Voltar"
   },
   "social": {
     "title": "Social",
@@ -150,7 +151,10 @@
     "noResults": "Nenhum utilizador encontrado",
     "noFriends": "Ainda não tem amigos. Comece a procurar!",
     "noRequests": "Sem pedidos de amizade pendentes",
-    "inviteByEmail": "Convidar por Email"
+    "inviteByEmail": "Convidar por Email",
+    "addFriend": "Adicionar Amigo",
+    "acceptRequest": "Aceitar Pedido",
+    "accepting": "A aceitar..."
   },
   "addFriend": {
     "title": "Adicionar Amigo",
@@ -183,6 +187,11 @@
     "title": "Definições",
     "subtitle": "Gerir as definições da sua conta",
     "changePhoto": "Alterar Foto",
+    "photoChanged": "Foto Selecionada",
+    "photoWillUpdate": "A foto será atualizada quando guardar",
+    "error": "Erro",
+    "invalidImageType": "Por favor selecione um ficheiro de imagem válido",
+    "imageTooLarge": "A imagem é muito grande. O tamanho máximo é 5MB",
     "firstName": "Nome",
     "lastName": "Sobrenome",
     "firstNamePlaceholder": "O seu nome",
@@ -597,6 +606,13 @@
     "blockedStep2": "Procure por 'Notificações' ou 'Permissões'",
     "blockedStep3": "Permita notificações para este site e recarregue a página",
     "info": "As notificações são enviadas mesmo quando a aplicação está fechada. Pode desativá-las a qualquer momento."
+  },
+  "pushNotificationPrompt": {
+    "title": "Receber Notificações?",
+    "message": "Gostaria de receber notificações push para ser avisado sobre novos grupos, mensagens e atualizações importantes?",
+    "yes": "Sim, ativar",
+    "no": "Não, obrigado",
+    "activating": "A ativar..."
   }
 }
 

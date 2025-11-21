@@ -12,8 +12,9 @@ class User(AbstractUser):
     """Custom User model with email as unique identifier."""
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
-    profile_picture = models.URLField(blank=True, null=True)
+    profile_picture = models.TextField(blank=True, null=True)  # Changed from URLField to TextField to support base64 data URLs
     profile_complete = models.BooleanField(default=False)
+    push_notifications_asked = models.BooleanField(default=False)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']

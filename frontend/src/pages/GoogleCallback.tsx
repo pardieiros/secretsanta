@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
 import OnboardingModal from "../components/OnboardingModal";
+import PushNotificationPromptModal from "../components/PushNotificationPromptModal";
 import { authAPI, userAPI } from "../lib/api";
 import { handleApiError } from "../utils/errorHandler";
 import { useErrorModal } from "../hooks/useErrorModal";
@@ -14,6 +15,7 @@ export default function GoogleCallback() {
   const navigate = useNavigate();
   const { setUser, setTokens } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showPushPrompt, setShowPushPrompt] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
   const { isOpen, errorData, showError, hideError } = useErrorModal();
@@ -76,6 +78,10 @@ export default function GoogleCallback() {
         setLoading(false);
       } else {
         console.log("Profile already complete, going to dashboard");
+        // Check if we should show push notification prompt
+        if (data.user && data.user.push_notifications_asked === false) {
+          setShowPushPrompt(true);
+        }
         // Profile complete, go to dashboard
         navigate("/dashboard");
       }
@@ -136,6 +142,10 @@ export default function GoogleCallback() {
 
       // Navigate based on action
       if (action === "join") {
+        // Check if we should show push notification prompt when going to dashboard
+        if (updatedUserData && updatedUserData.push_notifications_asked === false) {
+          setShowPushPrompt(true);
+        }
         navigate("/dashboard");
       } else {
         navigate("/groups/new");
@@ -168,6 +178,10 @@ export default function GoogleCallback() {
           phone: userData?.phone || "",
           profilePicture: userData?.profile_picture || null,
         }}
+      />
+      <PushNotificationPromptModal
+        isOpen={showPushPrompt}
+        onClose={() => setShowPushPrompt(false)}
       />
       <ErrorModal
         isOpen={isOpen}

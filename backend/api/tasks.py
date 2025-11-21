@@ -27,8 +27,17 @@ def execute_draw_task(group_id):
     except Group.DoesNotExist:
         return {'error': 'Group not found'}
     
-    if group.is_drawn:
-        return {'error': 'Draw has already been completed for this group'}
+    # Check if assignments already exist (don't recreate if they do)
+    from .models import SecretSantaAssignment
+    existing_assignments = SecretSantaAssignment.objects.filter(group=group).count()
+    if existing_assignments > 0 and group.is_drawn:
+        # Assignments already exist and group is drawn, don't recreate
+        send_draw_completed_notifications.delay(group_id)
+        return {
+            'success': True,
+            'message': f'Assignments already exist for this group',
+            'assignments_count': existing_assignments
+        }
     
     # Get all members
     memberships = GroupMembership.objects.filter(group=group).select_related('user')
@@ -150,7 +159,7 @@ def send_draw_completed_notifications(group_id):
         
         # Create notification
         try:
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 user=member,
                 notification_type='group_draw',
                 title='Secret Santa Draw Completed',
@@ -158,6 +167,9 @@ def send_draw_completed_notifications(group_id):
                 related_group=group
             )
             notifications_created += 1
+            # Send push notification
+            from .push_notifications import send_notification_push
+            send_notification_push(notification)
         except Exception as e:
             errors.append(f'Failed to create notification for {member.email}: {str(e)}')
         
@@ -271,7 +283,7 @@ def send_reveal_notifications(group_id):
         
         # Create notification
         try:
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 user=member,
                 notification_type='group_draw',
                 title='Secret Santa Revealed!',
@@ -279,6 +291,9 @@ def send_reveal_notifications(group_id):
                 related_group=group
             )
             notifications_created += 1
+            # Send push notification
+            from .push_notifications import send_notification_push
+            send_notification_push(notification)
         except Exception as e:
             errors.append(f'Failed to create notification for {member.email}: {str(e)}')
         
@@ -391,7 +406,7 @@ Happy gifting!
         try:
             invited_user = User.objects.get(email=recipient_email)
             owner_name = group.owner.first_name or group.owner.email
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 user=invited_user,
                 notification_type='group_invite',
                 title='Group Invitation',
@@ -399,6 +414,9 @@ Happy gifting!
                 related_user=group.owner,
                 related_group=group
             )
+            # Send push notification
+            from .push_notifications import send_notification_push
+            send_notification_push(notification)
         except User.DoesNotExist:
             # User doesn't exist yet, no notification needed
             pass

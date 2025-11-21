@@ -75,3 +75,6 @@ E o email será realmente enviado (não apenas impresso no console).
 - **Desenvolvimento**: Para desenvolvimento local, pode usar o console backend (padrão)
 - **Produção**: Sempre use SMTP real em produção
 
+
+
+
