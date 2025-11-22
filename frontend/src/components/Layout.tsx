@@ -1,5 +1,5 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -84,9 +84,13 @@ export default function Layout() {
   useChannel(
     user ? `private-user-${user.id}` : '',
     'new-message',
-    () => {
+    useCallback((data: any) => {
+      // Invalidate and refetch conversations to update unread count and list
       queryClient.invalidateQueries({ queryKey: ['messages', 'conversations'] })
-    }
+      queryClient.refetchQueries({ queryKey: ['messages', 'conversations'] })
+      // Also invalidate any active message queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ['messages'] })
+    }, [queryClient])
   )
 
   // Listen for other notification events

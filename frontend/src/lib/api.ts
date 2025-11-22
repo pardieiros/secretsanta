@@ -308,6 +308,14 @@ export const messageAPI = {
     const response = await api.post('/messages/mark_all_read/', { user_id: userId })
     return response.data
   },
+  
+  sendTypingIndicator: async (receiverId: number, isTyping: boolean) => {
+    const response = await api.post('/messages/typing_indicator/', { 
+      receiver_id: receiverId, 
+      is_typing: isTyping 
+    })
+    return response.data
+  },
 }
 
 // Notification API

@@ -295,9 +295,12 @@ def send_notification_push(notification):
             pusher_client.trigger(channel_name, event_name, ws_data)
             logger.info(f"Sent WebSocket event {event_name} to channel {channel_name} for notification {notification.id}")
         else:
-            logger.warning("Pusher client not available, skipping WebSocket notification")
+            logger.debug(
+                f"Pusher client not available, skipping WebSocket notification for notification {notification.id}. "
+                "Check SOCKET_APP_ID, SOCKET_APP_KEY, SOCKET_APP_SECRET, and SOCKET_HOST environment variables."
+            )
     except Exception as e:
-        logger.error(f"Error sending WebSocket notification for notification {notification.id}: {str(e)}")
+        logger.error(f"Error sending WebSocket notification for notification {notification.id}: {str(e)}", exc_info=True)
     
     return web_push_results
 

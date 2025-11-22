@@ -1368,29 +1368,73 @@ class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        """Return messages where user is sender or receiver."""
+        """
+        OPTIMIZED: Return messages where user is sender or receiver, ordered by most recent first.
+        Uses select_related to avoid N+1 queries and only() to limit selected fields.
+        """
         user = self.request.user
         other_user_id = self.request.query_params.get('user')
         
         if other_user_id:
             other_user = get_object_or_404(User, pk=other_user_id)
+            # OPTIMIZATION: Use select_related to preload sender and receiver
+            # OPTIMIZATION: Use only() to limit fields to what's needed
             return Message.objects.filter(
                 Q(sender=user, receiver=other_user) | Q(sender=other_user, receiver=user)
-            )
+            ).select_related(
+                'sender',
+                'receiver'
+            ).only(
+                'id',
+                'content',
+                'is_read',
+                'created_at',
+                'sender__id',
+                'sender__email',
+                'sender__first_name',
+                'sender__last_name',
+                'sender__profile_picture',
+                'receiver__id',
+                'receiver__email',
+                'receiver__first_name',
+                'receiver__last_name',
+                'receiver__profile_picture'
+            ).order_by('-created_at')
         
+        # OPTIMIZATION: Apply same optimizations for general queryset
         return Message.objects.filter(
             Q(sender=user) | Q(receiver=user)
-        )
+        ).select_related(
+            'sender',
+            'receiver'
+        ).only(
+            'id',
+            'content',
+            'is_read',
+            'created_at',
+            'sender__id',
+            'sender__email',
+            'sender__first_name',
+            'sender__last_name',
+            'sender__profile_picture',
+            'receiver__id',
+            'receiver__email',
+            'receiver__first_name',
+            'receiver__last_name',
+            'receiver__profile_picture'
+        ).order_by('-created_at')
     
     def perform_create(self, serializer):
-        """Create a message."""
+        """
+        OPTIMIZED: Create a message with efficient friend check and WebSocket push.
+        """
         receiver_id = self.request.data.get('receiver')
         if not receiver_id:
             raise serializers.ValidationError({'receiver': 'This field is required.'})
         
         receiver = get_object_or_404(User, pk=receiver_id)
         
-        # Check if users are friends
+        # OPTIMIZATION: Efficient friend check with exists() - stops after first match
         friendship = Friendship.objects.filter(
             Q(requester=self.request.user, addressee=receiver) |
             Q(requester=receiver, addressee=self.request.user),
@@ -1400,12 +1444,17 @@ class MessageViewSet(viewsets.ModelViewSet):
         if not friendship:
             raise serializers.ValidationError({'receiver': 'You can only message your friends.'})
         
+        # Save message efficiently
         message = serializer.save(sender=self.request.user, receiver=receiver)
         
-        # Send WebSocket event for new message
+        # OPTIMIZATION: Send WebSocket event with minimal data - only what client needs
         try:
             from .utils.pusher_client import pusher_client
+            import logging
+            logger = logging.getLogger(__name__)
+            
             if pusher_client:
+                # OPTIMIZATION: Send only essential fields in WebSocket event
                 message_data = {
                     'id': message.id,
                     'sender_id': message.sender.id,
@@ -1413,14 +1462,16 @@ class MessageViewSet(viewsets.ModelViewSet):
                     'content': message.content,
                     'created_at': message.created_at.isoformat(),
                     'sender_name': self.request.user.first_name or self.request.user.email,
+                    'is_read': message.is_read,  # Include is_read status
                 }
                 # Send to receiver's channel
                 channel_name = f"private-user-{receiver.id}"
                 pusher_client.trigger(channel_name, "new-message", message_data)
+                logger.info(f"Sent WebSocket event 'new-message' to channel {channel_name} for message {message.id}")
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"Failed to send WebSocket event for message: {str(e)}")
+            logger.error(f"Failed to send WebSocket event for message {message.id}: {str(e)}", exc_info=True)
         
         # Create notification for the message
         try:
@@ -1443,32 +1494,58 @@ class MessageViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def conversations(self, request):
-        """Get list of conversations."""
+        """
+        OPTIMIZED: Get list of conversations with efficient queries.
+        Uses select_related, only(), and annotate for better performance.
+        """
+        from django.db.models import Count
+        
         user = request.user
         
-        # Get unique users who have sent or received messages
-        sent_messages = Message.objects.filter(sender=user).values_list('receiver_id', flat=True).distinct()
-        received_messages = Message.objects.filter(receiver=user).values_list('sender_id', flat=True).distinct()
+        # OPTIMIZATION: Get unique user IDs efficiently
+        sent_user_ids = Message.objects.filter(sender=user).values_list('receiver_id', flat=True).distinct()
+        received_user_ids = Message.objects.filter(receiver=user).values_list('sender_id', flat=True).distinct()
+        user_ids = set(list(sent_user_ids) + list(received_user_ids))
         
-        user_ids = set(list(sent_messages) + list(received_messages))
-        users = User.objects.filter(id__in=user_ids)
+        if not user_ids:
+            return Response([])
+        
+        # OPTIMIZATION: Annotate unread count directly in queryset with only() to limit fields
+        users = User.objects.filter(id__in=user_ids).only(
+            'id',
+            'email',
+            'first_name',
+            'last_name',
+            'profile_picture'
+        ).annotate(
+            unread_count=Count(
+                'sent_messages',
+                filter=Q(sent_messages__receiver=user, sent_messages__is_read=False)
+            )
+        )
         
         conversations = []
         for other_user in users:
+            # OPTIMIZATION: Get last message efficiently with select_related and only()
             last_message = Message.objects.filter(
                 Q(sender=user, receiver=other_user) | Q(sender=other_user, receiver=user)
+            ).select_related('sender', 'receiver').only(
+                'id',
+                'content',
+                'created_at',
+                'sender__id',
+                'sender__email',
+                'sender__first_name',
+                'sender__last_name',
+                'sender__profile_picture',
+                'receiver__id',
+                'receiver__email'
             ).order_by('-created_at').first()
-            
-            unread_count = Message.objects.filter(
-                sender=other_user,
-                receiver=user,
-                is_read=False
-            ).count()
             
             conversations.append({
                 'user': UserSerializer(other_user).data,
                 'last_message': MessageSerializer(last_message).data if last_message else None,
-                'unread_count': unread_count
+                'unread_count': other_user.unread_count
             })
         
         return Response(conversations)
@@ -1491,19 +1568,80 @@ class MessageViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['post'])
     def mark_all_read(self, request):
-        """Mark all messages from a user as read."""
+        """
+        OPTIMIZED: Mark all messages from a user as read using bulk update.
+        Already optimized with .update() - single query execution.
+        """
         user_id = request.data.get('user_id')
         if not user_id:
             return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         other_user = get_object_or_404(User, pk=user_id)
-        Message.objects.filter(
+        
+        # OPTIMIZATION: Already using .update() which is efficient (single SQL UPDATE)
+        # Count affected rows for response
+        updated_count = Message.objects.filter(
             sender=other_user,
             receiver=request.user,
             is_read=False
         ).update(is_read=True)
         
-        return Response({'message': 'All messages marked as read'})
+        return Response({
+            'message': 'All messages marked as read',
+            'updated_count': updated_count
+        })
+    
+    @action(detail=False, methods=['post'])
+    def typing_indicator(self, request):
+        """
+        OPTIMIZED: Send typing indicator to receiver - lightweight endpoint.
+        No DB writes, only friend check and WebSocket push.
+        """
+        receiver_id = request.data.get('receiver_id')
+        is_typing = request.data.get('is_typing', True)
+        
+        if not receiver_id:
+            return Response({'error': 'receiver_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # OPTIMIZATION: Only fetch receiver if needed, use minimal fields
+        receiver = User.objects.only('id').filter(pk=receiver_id).first()
+        if not receiver:
+            return Response({'error': 'Receiver not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # OPTIMIZATION: Efficient friend check with exists() - stops after first match
+        friendship = Friendship.objects.filter(
+            Q(requester=request.user, addressee=receiver) |
+            Q(requester=receiver, addressee=request.user),
+            status='accepted'
+        ).exists()
+        
+        if not friendship:
+            return Response({'error': 'You can only send typing indicators to your friends.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # OPTIMIZATION: Lightweight - only send WebSocket event, no DB writes
+        try:
+            from .utils.pusher_client import pusher_client
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            if pusher_client:
+                # OPTIMIZATION: Send only essential data
+                typing_data = {
+                    'sender_id': request.user.id,
+                    'receiver_id': receiver.id,
+                    'is_typing': is_typing,
+                    'sender_name': request.user.first_name or request.user.email,
+                }
+                # Send to receiver's channel
+                channel_name = f"private-user-{receiver.id}"
+                pusher_client.trigger(channel_name, "user-typing", typing_data)
+                logger.debug(f"Sent typing indicator to channel {channel_name}")
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send typing indicator: {str(e)}", exc_info=True)
+        
+        return Response({'message': 'Typing indicator sent'})
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -1783,19 +1921,55 @@ class PusherAuthView(APIView):
         """Authenticate Pusher channel subscription."""
         from .utils.pusher_client import pusher_client
         import json
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        # Log authentication attempt
+        logger.debug(f"Pusher auth request from user {request.user.id if hasattr(request, 'user') else 'anonymous'}")
         
         if not pusher_client:
+            logger.error("Pusher client not configured")
             return Response(
                 {'error': 'Pusher client not configured'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
         try:
-            body = json.loads(request.body) if isinstance(request.body, bytes) else request.data
-            socket_id = body.get("socket_id")
-            channel = body.get("channel_name")
+            # Pusher JS sends data as form data (application/x-www-form-urlencoded)
+            # Try to get from request.data first (DRF handles both JSON and form data)
+            body = {}
+            
+            if hasattr(request, 'data') and request.data:
+                body = dict(request.data)
+            elif hasattr(request, 'POST') and request.POST:
+                body = dict(request.POST)
+            elif hasattr(request, 'body') and request.body:
+                body_str = request.body.decode('utf-8') if isinstance(request.body, bytes) else request.body
+                # Try to parse as JSON
+                try:
+                    if body_str:
+                        body = json.loads(body_str)
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    # Try to parse as form data
+                    try:
+                        from urllib.parse import parse_qs
+                        body = {k: v[0] if len(v) == 1 else v for k, v in parse_qs(body_str).items()}
+                    except:
+                        body = {}
+            
+            # Extract values, handling both single values and lists (form data can return lists)
+            socket_id_raw = body.get("socket_id") or body.get("socketId")
+            channel_raw = body.get("channel_name") or body.get("channelName")
+            
+            # If it's a list, get the first element
+            socket_id = socket_id_raw[0] if isinstance(socket_id_raw, list) else socket_id_raw
+            channel = channel_raw[0] if isinstance(channel_raw, list) else channel_raw
+            
+            logger.debug(f"Pusher auth request - socket_id: {socket_id}, channel: {channel}, user: {request.user.id}")
             
             if not socket_id or not channel:
+                logger.warning(f"Missing required fields - socket_id: {socket_id}, channel: {channel}")
                 return Response(
                     {'error': 'socket_id and channel_name are required'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -1805,6 +1979,7 @@ class PusherAuthView(APIView):
             if channel.startswith("private-user-"):
                 user_id = channel.replace("private-user-", "")
                 if str(request.user.id) != user_id:
+                    logger.warning(f"Unauthorized channel access attempt - user {request.user.id} tried to access channel for user {user_id}")
                     return Response(
                         {'error': 'Unauthorized channel access'},
                         status=status.HTTP_403_FORBIDDEN
@@ -1814,16 +1989,16 @@ class PusherAuthView(APIView):
                 channel=channel,
                 socket_id=socket_id
             )
+            logger.debug(f"Pusher auth successful for channel {channel}, user {request.user.id}")
             return Response(auth)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in Pusher auth request: {str(e)}")
             return Response(
                 {'error': 'Invalid JSON'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Pusher auth error: {str(e)}")
+            logger.error(f"Pusher auth error: {str(e)}", exc_info=True)
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

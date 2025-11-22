@@ -173,7 +173,8 @@
     "noMessages": "No messages yet. Start the conversation!",
     "selectConversation": "Select a conversation to start chatting",
     "typeMessage": "Type a message...",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "typing": "is typing..."
   },
   "notifications": {
     "title": "Notifications",

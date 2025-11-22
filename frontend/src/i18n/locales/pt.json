@@ -173,7 +173,8 @@
     "noMessages": "Ainda não há mensagens. Inicie a conversa!",
     "selectConversation": "Selecione uma conversa para começar a conversar",
     "typeMessage": "Escreva uma mensagem...",
-    "viewAll": "Ver todas"
+    "viewAll": "Ver todas",
+    "typing": "está a escrever..."
   },
   "notifications": {
     "title": "Notificações",
